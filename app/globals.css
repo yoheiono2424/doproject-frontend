@@ -1,26 +1,123 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* サイドバー固定レイアウト */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 256px;
+  height: 100vh;
+  background: #1f2937;
+  z-index: 100;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.content-area {
+  margin-left: 256px;
+  min-height: 100vh;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.screen {
+  display: none;
+  opacity: 0;
+  min-height: 100vh;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.screen.active {
+  display: block;
+  opacity: 1;
+  animation: fadeIn 0.3s ease-in;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ガントチャート関連スタイル */
+.gantt-cell {
+  width: 40px;
+  min-width: 40px;
+  position: relative;
+  height: 24px;
+}
+
+.gantt-row {
+  position: relative;
+  height: 24px;
+}
+
+.gantt-bar-container {
+  position: absolute;
+  height: 20px;
+  top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  font-size: 10px;
+  color: white;
+  font-weight: 500;
+  z-index: 10;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* フェーズごとの色分け */
+.gantt-phase-contract {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
+}
+
+.gantt-phase-preparation {
+  background: linear-gradient(135deg, #FB923C 0%, #F97316 100%);
+  box-shadow: 0 1px 2px rgba(251, 146, 60, 0.3);
+}
+
+.gantt-phase-construction {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.3);
+}
+
+.gantt-phase-completion {
+  background: linear-gradient(135deg, #9333EA 0%, #7C3AED 100%);
+  box-shadow: 0 1px 2px rgba(147, 51, 234, 0.3);
+}
+
+/* フェーズラベル */
+.gantt-phase-label {
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.excel-table {
+  font-size: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.excel-table td {
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+  white-space: nowrap;
+  position: relative;
+}
+
+.excel-table th {
+  background: #e0e0e0;
+  font-weight: normal;
+  padding: 2px 4px;
+  border: 1px solid #999;
+}
+
+.corins {
+  background-color: #ffeb3b !important;
+}
+
+.task-urgent { background-color: #ffcdd2; }
+.task-warning { background-color: #fff9c4; }
+.task-completed { background-color: #c8e6c9; }
+.status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; }
