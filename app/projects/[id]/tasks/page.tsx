@@ -69,6 +69,8 @@ export default function TaskManagementPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!editingTask) return;
+
     console.log('タスク更新:', {
       projectId,
       taskId: editingTask.id,
