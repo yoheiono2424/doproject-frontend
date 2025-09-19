@@ -8,7 +8,7 @@ import { useAuthStore } from '@/app/lib/store';
 export default function PersonnelPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
-  const [selectedMonth, setSelectedMonth] = useState('2025-01');
+  const [selectedMonth] = useState('2025-01');
 
   useEffect(() => {
     if (!isAuthenticated) {

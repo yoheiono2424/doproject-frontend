@@ -8,7 +8,7 @@ import { useAuthStore } from '@/app/lib/store';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     if (!isAuthenticated) {

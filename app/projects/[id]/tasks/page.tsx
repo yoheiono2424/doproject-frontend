@@ -13,7 +13,7 @@ export default function TaskManagementPage() {
   const { isAuthenticated } = useAuthStore();
   const projectId = params.id as string;
 
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<{ id: string; name: string; assignee?: string; deadline?: string; phaseName: string; completed: boolean } | null>(null);
   const [formData, setFormData] = useState({
     assignee: '',
     deadline: '',
@@ -50,7 +50,7 @@ export default function TaskManagementPage() {
   }
 
   // タスクの編集開始
-  const handleEditTask = (task: any, phaseName: string) => {
+  const handleEditTask = (task: { id: string; name: string; assignee?: string; deadline?: string; completed: boolean }, phaseName: string) => {
     setEditingTask({ ...task, phaseName });
     setFormData({
       assignee: task.assignee || '',
