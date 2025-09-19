@@ -12,7 +12,22 @@ export default function CalendarViewPage() {
   const params = useParams();
   const { isAuthenticated } = useAuthStore();
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const [hoveredTask, setHoveredTask] = useState<{ id: string; name: string; deadline: string; assignee: string; project: string; phase: string } | null>(null);
+  type CalendarTaskType = {
+    id: string;
+    name: string;
+    deadline: string;
+    assignee: string;
+    projectId: string;
+    projectName: string;
+    orderNo: string;
+    clientName: string;
+    siteName: string;
+    phase: string;
+    urgency: string;
+    completed: boolean;
+  };
+
+  const [hoveredTask, setHoveredTask] = useState<CalendarTaskType | null>(null);
   const [hoveredPosition, setHoveredPosition] = useState<{x: number, y: number} | null>(null);
 
   const year = parseInt(params.year as string);
@@ -156,7 +171,7 @@ export default function CalendarViewPage() {
     router.push(`/schedule/${newYear}/${newMonth}`);
   };
 
-  const handleTaskHover = (task: { id: string; name: string; deadline: string; assignee: string; project: string; phase: string }, event: React.MouseEvent) => {
+  const handleTaskHover = (task: CalendarTaskType, event: React.MouseEvent) => {
     setHoveredTask(task);
     setHoveredPosition({ x: event.clientX, y: event.clientY });
   };
@@ -295,7 +310,7 @@ export default function CalendarViewPage() {
                                     {day}
                                   </div>
                                   <div className="space-y-1" style={{ fontSize: '11px' }}>
-                                    {tasks.map((task: { id: string; name: string; deadline: string; assignee: string; project: string; phase: string }) => (
+                                    {tasks.map((task: CalendarTaskType) => (
                                       <div
                                         key={task.id}
                                         className={`p-0.5 rounded cursor-pointer hover:opacity-80 ${

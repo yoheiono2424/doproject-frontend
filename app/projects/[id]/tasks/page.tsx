@@ -13,6 +13,18 @@ export default function TaskManagementPage() {
   const { isAuthenticated } = useAuthStore();
   const projectId = params.id as string;
 
+  type TaskType = {
+    id: string;
+    name: string;
+    completed: boolean;
+    deadline?: string;
+    assignee?: string;
+  };
+
+  type TasksType = {
+    [key: string]: TaskType[];
+  };
+
   const [editingTask, setEditingTask] = useState<{ id: string; name: string; assignee?: string; deadline?: string; phaseName: string; completed: boolean } | null>(null);
   const [formData, setFormData] = useState({
     assignee: '',
@@ -50,7 +62,7 @@ export default function TaskManagementPage() {
   }
 
   // タスクの編集開始
-  const handleEditTask = (task: { id: string; name: string; assignee?: string; deadline?: string; completed: boolean }, phaseName: string) => {
+  const handleEditTask = (task: TaskType, phaseName: string) => {
     setEditingTask({ ...task, phaseName });
     setFormData({
       assignee: task.assignee || '',
@@ -98,7 +110,7 @@ export default function TaskManagementPage() {
   };
 
   // 期限の緊急度を判定
-  const getUrgencyClass = (deadline: string) => {
+  const getUrgencyClass = (deadline?: string) => {
     if (!deadline) return '';
 
     const today = new Date();
@@ -137,7 +149,7 @@ export default function TaskManagementPage() {
   const getPhaseInfo = () => {
     const phases = ['契約フェーズ', '着工準備フェーズ', '施工フェーズ', '竣工フェーズ'];
     return phases.map(phaseName => {
-      const phaseTasks = tasks[phaseName] || [];
+      const phaseTasks: TaskType[] = (tasks as TasksType)[phaseName] || [];
       const tasksWithDeadlines = phaseTasks.filter(task => task.deadline);
 
       return {
@@ -253,7 +265,7 @@ export default function TaskManagementPage() {
                   </div>
                   <div className="p-4">
                     <div className="space-y-2">
-                      {phase.tasks.map((task) => (
+                      {phase.tasks.map((task: TaskType) => (
                         <div
                           key={task.id}
                           className={`p-3 border rounded ${getUrgencyClass(task.deadline)}`}
