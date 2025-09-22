@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
 
@@ -132,16 +133,6 @@ export default function StaffRegisterPage() {
     return errors;
   };
 
-  // フォームが有効かチェック
-  const isFormValid = () => {
-    return (
-      formData.name.trim() !== '' &&
-      formData.nameKana.trim() !== '' &&
-      formData.employeeType !== '' &&
-      formData.department.trim() !== '' &&
-      formData.specialty !== ''
-    );
-  };
 
   const handleQualificationChange = (qualification: string) => {
     setQualifications({ ...qualifications, [qualification]: !qualifications[qualification as keyof typeof qualifications] });
@@ -423,7 +414,7 @@ export default function StaffRegisterPage() {
                         <div className="flex items-center space-x-4">
                           <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
                             {imagePreview ? (
-                              <img src={imagePreview} alt="プレビュー" className="w-full h-full object-cover rounded-lg" />
+                              <Image src={imagePreview} alt="プレビュー" width={96} height={96} className="w-full h-full object-cover rounded-lg" />
                             ) : (
                               <span className="text-gray-400">📷</span>
                             )}

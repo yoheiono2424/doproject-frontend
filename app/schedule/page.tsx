@@ -32,10 +32,6 @@ export default function SchedulePage() {
     return Array.from(managers).sort();
   };
 
-  const getUniqueTypes = () => {
-    const types = new Set(mockProjects.map(p => p.type));
-    return Array.from(types).sort();
-  };
 
   // データのフィルタリングとソート
   const getFilteredAndSortedProjects = () => {
