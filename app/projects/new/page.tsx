@@ -123,6 +123,10 @@ export default function ProjectRegisterPage() {
                     >
                       <option value="機械">機械</option>
                       <option value="電気">電気</option>
+                      <option value="鋼造">鋼造</option>
+                      <option value="通信">通信</option>
+                      <option value="納品">納品</option>
+                      <option value="その他">その他</option>
                     </select>
                   </div>
                   <div>

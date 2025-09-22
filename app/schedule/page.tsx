@@ -186,9 +186,12 @@ export default function SchedulePage() {
                   className="border rounded px-2 py-1 text-sm"
                 >
                   <option value="all">すべて</option>
-                  {getUniqueTypes().map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
+                  <option value="機械">機械</option>
+                  <option value="電気">電気</option>
+                  <option value="鋼造">鋼造</option>
+                  <option value="通信">通信</option>
+                  <option value="納品">納品</option>
+                  <option value="その他">その他</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
@@ -284,7 +287,19 @@ export default function SchedulePage() {
                     <td>{project.manager}</td>
                     <td>{index + 1}</td>
                     <td>{project.orderNo}</td>
-                    <td>{project.type}</td>
+                    <td>
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                        project.type === '機械' ? 'bg-blue-100 text-blue-800' :
+                        project.type === '電気' ? 'bg-yellow-100 text-yellow-800' :
+                        project.type === '鋼造' ? 'bg-gray-100 text-gray-800' :
+                        project.type === '通信' ? 'bg-purple-100 text-purple-800' :
+                        project.type === '納品' ? 'bg-green-100 text-green-800' :
+                        project.type === 'その他' ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {project.type}
+                      </span>
+                    </td>
                     <td>
                       <div>{project.clientName}</div>
                       <div className="text-xs">{project.siteName}</div>

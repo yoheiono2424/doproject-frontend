@@ -60,7 +60,7 @@ export default function ProjectsPage() {
           <div className="bg-white rounded shadow">
             <div className="p-4 border-b">
               <div className="flex gap-4">
-                <select 
+                <select
                   className="border rounded px-3 py-1"
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
@@ -68,6 +68,10 @@ export default function ProjectsPage() {
                   <option value="all">全ての種別</option>
                   <option value="機械">機械</option>
                   <option value="電気">電気</option>
+                  <option value="鋼造">鋼造</option>
+                  <option value="通信">通信</option>
+                  <option value="納品">納品</option>
+                  <option value="その他">その他</option>
                 </select>
                 <select 
                   className="border rounded px-3 py-1"
@@ -121,7 +125,19 @@ export default function ProjectsPage() {
                     <td className="p-2">{project.orderNo}</td>
                     <td className="p-2">{project.clientName}</td>
                     <td className="p-2">{project.projectName}</td>
-                    <td className="p-2 text-center">{project.type}</td>
+                    <td className="p-2 text-center">
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                        project.type === '機械' ? 'bg-blue-100 text-blue-800' :
+                        project.type === '電気' ? 'bg-yellow-100 text-yellow-800' :
+                        project.type === '鋼造' ? 'bg-gray-100 text-gray-800' :
+                        project.type === '通信' ? 'bg-purple-100 text-purple-800' :
+                        project.type === '納品' ? 'bg-green-100 text-green-800' :
+                        project.type === 'その他' ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {project.type}
+                      </span>
+                    </td>
                     <td className="p-2 text-center">
                       <span className={`status-badge ${
                         project.contractType === '元' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
