@@ -6,6 +6,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
+import {
+  User,
+  Phone,
+  Award,
+  Heart,
+  Settings,
+  Camera
+} from 'lucide-react';
 
 export default function StaffRegisterPage() {
   const router = useRouter();
@@ -222,11 +230,11 @@ export default function StaffRegisterPage() {
   };
 
   const tabs = [
-    { id: 'basic', label: '基本情報', icon: '👤' },
-    { id: 'contact', label: '連絡先', icon: '📞' },
-    { id: 'qualification', label: '資格・スキル', icon: '📜' },
-    { id: 'health', label: '健康・安全', icon: '🏥' },
-    { id: 'system', label: 'システム', icon: '💻' },
+    { id: 'basic', label: '基本情報', icon: User },
+    { id: 'contact', label: '連絡先', icon: Phone },
+    { id: 'qualification', label: '資格・スキル', icon: Award },
+    { id: 'health', label: '健康・安全', icon: Heart },
+    { id: 'system', label: 'システム', icon: Settings },
   ];
 
   return (
@@ -246,21 +254,24 @@ export default function StaffRegisterPage() {
           {/* タブナビゲーション */}
           <div className="bg-white rounded-t-lg shadow">
             <div className="flex border-b">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
+              {tabs.map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-6 py-3 font-medium transition-colors flex items-center gap-2 ${
+                      activeTab === tab.id
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    <IconComponent size={18} />
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -416,7 +427,7 @@ export default function StaffRegisterPage() {
                             {imagePreview ? (
                               <Image src={imagePreview} alt="プレビュー" width={96} height={96} className="w-full h-full object-cover rounded-lg" />
                             ) : (
-                              <span className="text-gray-400">📷</span>
+                              <Camera size={32} className="text-gray-400" />
                             )}
                           </div>
                           <div>

@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects } from '@/app/lib/mockData';
+import { mockProjects, mockPartners } from '@/app/lib/mockData';
 
 type SortOrder = 'default' | 'desc';
+type ViewMode = 'month' | 'day';
 
 export default function SchedulePage() {
   const router = useRouter();
@@ -15,6 +16,10 @@ export default function SchedulePage() {
   const [managerFilter, setManagerFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [contractFilter, setContractFilter] = useState<string>('all');
+  const [workTypeTab, setWorkTypeTab] = useState<string>('工事');
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [selectedYear, setSelectedYear] = useState<number>(0);
+  const [selectedMonth, setSelectedMonth] = useState<number>(0);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -36,6 +41,9 @@ export default function SchedulePage() {
   // データのフィルタリングとソート
   const getFilteredAndSortedProjects = () => {
     let filtered = [...mockProjects];
+
+    // 工事種別でフィルタリング（タブ）
+    filtered = filtered.filter(p => (p as any).workType === workTypeTab);
 
     // 担当者でフィルタリング
     if (managerFilter !== 'all') {
@@ -71,36 +79,111 @@ export default function SchedulePage() {
     setSortOrder(sortOrder === 'default' ? 'desc' : 'default');
   };
 
-  const months = [
-    '9月', '10月', '11月', '12月', '1月', '2月',
-    '3月', '4月', '5月', '6月', '7月', '8月'
-  ];
+  // 当月から18ヶ月分の月を生成
+  const generateMonths = () => {
+    const result = [];
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-indexed
+
+    for (let i = 0; i < 18; i++) {
+      const monthIndex = (currentMonth + i) % 12;
+      const year = currentYear + Math.floor((currentMonth + i) / 12);
+      const monthName = `${monthIndex + 1}月`;
+      result.push({ monthName, month: monthIndex + 1, year });
+    }
+    return result;
+  };
+
+  const months = generateMonths();
 
   const handleMonthClick = (year: number, month: number) => {
-    router.push(`/schedule/${year}/${month}`);
+    setSelectedYear(year);
+    setSelectedMonth(month);
+    setViewMode('day');
   };
+
+  const handleBackToMonthView = () => {
+    setViewMode('month');
+  };
+
+  // 日別表示用の日数を生成（1-31）
+  const generateDays = () => {
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    return Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  };
+
+  const days = viewMode === 'day' ? generateDays() : [];
 
   const getGanttBarPosition = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const baseYear = 2025;
-    const baseMonth = 8; // September
 
-    // Calculate start position (in months from base)
-    const startYear = start.getFullYear();
-    const startMonth = start.getMonth();
-    const startPosition = (startYear - baseYear) * 12 + startMonth - baseMonth;
+    if (viewMode === 'month') {
+      // 月表示モード
+      const today = new Date();
+      const baseYear = today.getFullYear();
+      const baseMonth = today.getMonth(); // 現在月を基準に
 
-    // Calculate duration in months
-    const endYear = end.getFullYear();
-    const endMonth = end.getMonth();
-    const duration = (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
+      // Calculate start position (in months from base)
+      const startYear = start.getFullYear();
+      const startMonth = start.getMonth();
+      let startPosition = (startYear - baseYear) * 12 + startMonth - baseMonth;
 
-    // Convert to pixels (40px per cell)
-    const left = startPosition * 40;
-    const width = duration * 40;
+      // Calculate duration in months
+      const endYear = end.getFullYear();
+      const endMonth = end.getMonth();
+      let duration = (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
 
-    return { left, width, duration };
+      // 当月より前に開始する案件の場合、表示範囲を調整
+      if (startPosition < 0) {
+        duration = duration + startPosition; // 表示期間を調整
+        startPosition = 0; // 当月から表示開始
+      }
+
+      // 18ヶ月を超える場合は表示範囲内に収める
+      if (startPosition + duration > 18) {
+        duration = 18 - startPosition;
+      }
+
+      // Convert to pixels (40px per cell)
+      const left = startPosition * 40;
+      const width = duration * 40;
+
+      return { left, width, duration };
+    } else {
+      // 日別表示モード
+      const startDay = start.getDate();
+      const endDay = end.getDate();
+      const startYearMonth = start.getFullYear() * 12 + start.getMonth();
+      const endYearMonth = end.getFullYear() * 12 + end.getMonth();
+      const selectedYearMonth = selectedYear * 12 + (selectedMonth - 1);
+
+      // 選択された月の範囲内の日付のみ表示
+      let displayStartDay = 1;
+      let displayEndDay = new Date(selectedYear, selectedMonth, 0).getDate();
+
+      if (startYearMonth === selectedYearMonth && endYearMonth === selectedYearMonth) {
+        // 同じ月内で開始・終了
+        displayStartDay = startDay;
+        displayEndDay = endDay;
+      } else if (startYearMonth === selectedYearMonth) {
+        // この月に開始
+        displayStartDay = startDay;
+      } else if (endYearMonth === selectedYearMonth) {
+        // この月に終了
+        displayEndDay = endDay;
+      } else if (startYearMonth > selectedYearMonth || endYearMonth < selectedYearMonth) {
+        // この月に該当しない
+        return { left: 0, width: 0, duration: 0 };
+      }
+
+      const left = (displayStartDay - 1) * 40;
+      const width = (displayEndDay - displayStartDay + 1) * 40;
+      const duration = displayEndDay - displayStartDay + 1;
+
+      return { left, width, duration };
+    }
   };
 
   const getPhaseInfo = (startDate: string, endDate: string, duration: number) => {
@@ -147,17 +230,65 @@ export default function SchedulePage() {
           <div className="p-4 border-b">
             <div className="flex justify-between items-center mb-3">
               <div>
-                <h2 className="text-2xl font-bold">2025年9月〜2026年8月 諸物件人員配置計画</h2>
+                <h2 className="text-2xl font-bold">
+                  {viewMode === 'month'
+                    ? '諸物件人員配置計画（18ヶ月表示）'
+                    : `諸物件人員配置計画（${selectedYear}年${selectedMonth}月 日別表示）`}
+                </h2>
                 <div className="flex items-center gap-4 mt-2">
                   <div className="px-3 py-1 bg-pink-100 text-pink-700 font-bold rounded">※ 着色物件はコリンズ対象</div>
                   <div className="text-sm text-purple-700 font-bold">※ ￥45,000千万円以上の物件は、専任の主任技術者を配置する事</div>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                {viewMode === 'day' && (
+                  <button
+                    onClick={handleBackToMonthView}
+                    className="px-4 py-2 bg-blue-100 text-blue-700 font-bold rounded hover:bg-blue-200"
+                  >
+                    ← 18ヶ月表示に戻る
+                  </button>
+                )}
+                <button
+                  onClick={() => alert('PDF出力しました')}
+                  className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+                >
+                  📄 PDF出力
+                </button>
+              </div>
+            </div>
+
+            {/* 工事種別タブ */}
+            <div className="border-b flex gap-2 mb-3">
               <button
-                onClick={() => alert('PDF出力しました')}
-                className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+                onClick={() => setWorkTypeTab('工事')}
+                className={`px-4 py-2 ${
+                  workTypeTab === '工事'
+                    ? 'border-b-2 border-blue-600 text-blue-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
               >
-                📄 PDF出力
+                工事
+              </button>
+              <button
+                onClick={() => setWorkTypeTab('保守点検')}
+                className={`px-4 py-2 ${
+                  workTypeTab === '保守点検'
+                    ? 'border-b-2 border-green-600 text-green-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                保守点検
+              </button>
+              <button
+                onClick={() => setWorkTypeTab('機器制作')}
+                className={`px-4 py-2 ${
+                  workTypeTab === '機器制作'
+                    ? 'border-b-2 border-purple-600 text-purple-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                機器制作
               </button>
             </div>
             <div className="flex gap-4 items-center border-t pt-3">
@@ -237,49 +368,61 @@ export default function SchedulePage() {
                       </span>
                     </div>
                   </th>
-                  <th colSpan={4} className="text-center">2025年</th>
-                  <th colSpan={16} className="text-center">2026年</th>
-                  <th colSpan={4} className="text-center">2027年</th>
+                  {/* 年ヘッダーまたは日別ヘッダー */}
+                  {viewMode === 'month' ? (
+                    <>
+                      {(() => {
+                        const yearGroups: { [key: number]: number } = {};
+                        months.forEach(({ year }) => {
+                          yearGroups[year] = (yearGroups[year] || 0) + 1;
+                        });
+                        return Object.entries(yearGroups).map(([year, count]) => (
+                          <th key={year} colSpan={count} className="text-center">
+                            {year}年
+                          </th>
+                        ));
+                      })()}
+                    </>
+                  ) : (
+                    <th colSpan={days.length} className="text-center">
+                      {selectedYear}年{selectedMonth}月
+                    </th>
+                  )}
                   <th rowSpan={2} style={{ width: '150px' }}>備考</th>
                 </tr>
                 <tr>
-                  {months.concat(months).map((month, index) => {
-                    // 2025年9月から始まる
-                    let year, monthNum;
-                    if (index < 4) {
-                      // 9,10,11,12月は2025年
-                      year = 2025;
-                      monthNum = index + 9; // 9,10,11,12
-                    } else if (index < 12) {
-                      // 1-8月は2026年
-                      year = 2026;
-                      monthNum = index - 3; // 1,2,3,4,5,6,7,8
-                    } else if (index < 16) {
-                      // 9,10,11,12月は2026年
-                      year = 2026;
-                      monthNum = index - 3; // 9,10,11,12
-                    } else {
-                      // 1-8月は2027年
-                      year = 2027;
-                      monthNum = index - 15; // 1,2,3,4,5,6,7,8
-                    }
-
-                    return (
+                  {viewMode === 'month' ? (
+                    months.map(({ monthName, month, year }, index) => (
                       <th
                         key={index}
                         className="gantt-cell cursor-pointer bg-blue-50 hover:bg-blue-200 transition-colors border-blue-200 text-blue-700 font-semibold"
-                        onClick={() => handleMonthClick(year, monthNum)}
-                        title={`${year}年${month}の詳細を表示`}
+                        onClick={() => handleMonthClick(year, month)}
+                        title={`${year}年${monthName}の日別表示へ`}
                       >
-                        {month}
+                        {monthName}
                       </th>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    days.map((day) => (
+                      <th
+                        key={day}
+                        className="gantt-cell bg-green-50 border-green-200 text-green-700 font-semibold"
+                        style={{ width: '40px' }}
+                      >
+                        {day}
+                      </th>
+                    ))
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {filteredProjects.map((project, index) => (
-                  <tr key={project.id} className={project.isCorins ? 'corins' : ''}>
+                  <tr
+                    key={project.id}
+                    className={`${project.isCorins ? 'corins' : ''} cursor-pointer hover:bg-blue-50 transition-colors`}
+                    onClick={() => router.push(`/projects/${project.id}`)}
+                    title="クリックで案件詳細を表示"
+                  >
                     <td>{project.manager}</td>
                     <td>{index + 1}</td>
                     <td>{project.orderNo}</td>
@@ -310,24 +453,139 @@ export default function SchedulePage() {
                         {project.endDate}
                       </div>
                     </td>
-                    <td colSpan={24} className="p-0" style={{ position: 'relative', height: '24px' }}>
-                      <div className="gantt-row">
+                    <td colSpan={viewMode === 'month' ? 18 : days.length} className="p-0" style={{ position: 'relative', height: '50px' }}>
+                      <div className="gantt-row" style={{ position: 'relative' }}>
                         {(() => {
                           const barPos = getGanttBarPosition(project.startDate, project.endDate);
-                          const phases = getPhaseInfo(project.startDate, project.endDate, barPos.duration);
+                          const partnerName = (project as any).partnerId
+                            ? mockPartners.find(p => p.id === (project as any).partnerId)?.companyName
+                            : null;
 
-                          return phases.map((phase, idx) => (
-                            <div
-                              key={idx}
-                              className={`gantt-bar-container ${phase.className}`}
-                              style={{
-                                left: `${barPos.left + phase.left}px`,
-                                width: `${phase.width}px`
-                              }}
-                            >
-                              <span className="gantt-phase-label">{phase.label}</span>
-                            </div>
-                          ));
+                          // 日別表示の場合で期間が0の場合はスキップ
+                          if (viewMode === 'day' && barPos.duration === 0) {
+                            return null;
+                          }
+
+                          if (viewMode === 'month') {
+                            // 月表示の場合
+                            // 保守点検・機器制作はシンプルなバーのみ、工事は4フェーズ表示
+                            const projectWorkType = (project as any).workType;
+
+                            if (projectWorkType === '保守点検' || projectWorkType === '機器制作') {
+                              // 保守点検・機器制作はシンプルなバー
+                              const hasPartner = partnerName && (project as any).partnerId;
+                              return (
+                                <>
+                                  <div
+                                    className="gantt-bar-container gantt-phase-construction"
+                                    style={{
+                                      left: `${barPos.left}px`,
+                                      width: `${barPos.width}px`
+                                    }}
+                                  >
+                                    <span className="gantt-phase-label">{project.currentPhase || '作業'}</span>
+                                  </div>
+                                  {hasPartner && (
+                                    <div
+                                      className="text-xs text-gray-600 cursor-pointer hover:underline hover:text-blue-600"
+                                      style={{
+                                        position: 'absolute',
+                                        left: `${barPos.left}px`,
+                                        top: '21px',
+                                        fontSize: '10px',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(`/partners/${(project as any).partnerId}`);
+                                      }}
+                                      title="クリックで協力会社詳細を表示"
+                                    >
+                                      {partnerName}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            } else {
+                              // 工事は4フェーズ表示
+                              const phases = getPhaseInfo(project.startDate, project.endDate, barPos.duration);
+                              // 施工フェーズ（3番目のフェーズ、index=2）を起点として協力会社名を表示
+                              const constructionPhase = phases[2]; // 施工フェーズ
+                              const partnerLeftPosition = barPos.left + constructionPhase.left;
+                              const hasPartner = partnerName && (project as any).partnerId;
+
+                              return (
+                                <>
+                                  {phases.map((phase, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`gantt-bar-container ${phase.className}`}
+                                      style={{
+                                        left: `${barPos.left + phase.left}px`,
+                                        width: `${phase.width}px`
+                                      }}
+                                    >
+                                      <span className="gantt-phase-label">{phase.label}</span>
+                                    </div>
+                                  ))}
+                                  {hasPartner && (
+                                    <div
+                                      className="text-xs text-gray-600 cursor-pointer hover:underline hover:text-blue-600"
+                                      style={{
+                                        position: 'absolute',
+                                        left: `${partnerLeftPosition}px`,
+                                        top: '21px',
+                                        fontSize: '10px',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(`/partners/${(project as any).partnerId}`);
+                                      }}
+                                      title="クリックで協力会社詳細を表示"
+                                    >
+                                      {partnerName}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            }
+                          } else {
+                            // 日別表示の場合はシンプルなバーのみ
+                            const hasPartner = partnerName && (project as any).partnerId;
+                            return (
+                              <>
+                                <div
+                                  className="gantt-bar-container gantt-phase-construction"
+                                  style={{
+                                    left: `${barPos.left}px`,
+                                    width: `${barPos.width}px`
+                                  }}
+                                >
+                                  <span className="gantt-phase-label">{project.currentPhase || '施工'}</span>
+                                </div>
+                                {hasPartner && (
+                                  <div
+                                    className="text-xs text-gray-600 cursor-pointer hover:underline hover:text-blue-600"
+                                    style={{
+                                      position: 'absolute',
+                                      left: `${barPos.left}px`,
+                                      top: '21px',
+                                      fontSize: '10px',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(`/partners/${(project as any).partnerId}`);
+                                    }}
+                                    title="クリックで協力会社詳細を表示"
+                                  >
+                                    {partnerName}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          }
                         })()}
                       </div>
                     </td>

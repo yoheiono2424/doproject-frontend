@@ -20,7 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // モックログイン（実際のプロダクションではSupabase Authを使用）
     if (username === 'admin' && password === 'password') {
       set({
-        user: { id: '1', name: '高橋太郎', role: 'admin' },
+        user: { id: '1', name: '山田太郎', role: 'admin' },
         isAuthenticated: true,
       });
       return true;

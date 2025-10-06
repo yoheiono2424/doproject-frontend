@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
+import { mockPartners } from '@/app/lib/mockData';
 
 export default function ProjectRegisterPage() {
   const router = useRouter();
@@ -13,8 +14,10 @@ export default function ProjectRegisterPage() {
   const [formData, setFormData] = useState({
     orderNo: '',
     contractType: '',
+    workType: '工事',
     projectType: '機械',
     amount: '',
+    partnerId: '',
     clientName: '',
     siteName: '',
     projectName: '',
@@ -79,8 +82,8 @@ export default function ProjectRegisterPage() {
                 <h3 className="font-bold">案件基本情報</h3>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-1">
                     <label className="block text-sm font-medium mb-1">
                       受注No <span className="text-red-600">*</span>
                     </label>
@@ -94,7 +97,7 @@ export default function ProjectRegisterPage() {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="col-span-1">
                     <label className="block text-sm font-medium mb-1">
                       元請/下請 <span className="text-red-600">*</span>
                     </label>
@@ -110,7 +113,34 @@ export default function ProjectRegisterPage() {
                       <option value="下">下請（6タスク自動生成）</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium mb-1">契約金額</label>
+                    <input
+                      type="number"
+                      name="amount"
+                      value={formData.amount}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="千円単位"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium mb-1">
+                      工事種別 <span className="text-red-600">*</span>
+                    </label>
+                    <select
+                      name="workType"
+                      value={formData.workType}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="工事">工事</option>
+                      <option value="保守点検">保守点検</option>
+                      <option value="機器制作">機器制作</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium mb-1">
                       種別 <span className="text-red-600">*</span>
                     </label>
@@ -129,16 +159,23 @@ export default function ProjectRegisterPage() {
                       <option value="その他">その他</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">契約金額</label>
-                    <input
-                      type="number"
-                      name="amount"
-                      value={formData.amount}
+                  <div className="col-span-3">
+                    <label className="block text-sm font-medium mb-1">
+                      協力会社
+                    </label>
+                    <select
+                      name="partnerId"
+                      value={formData.partnerId}
                       onChange={handleInputChange}
                       className="w-full border rounded px-3 py-2"
-                      placeholder="千円単位"
-                    />
+                    >
+                      <option value="">選択してください（任意）</option>
+                      {mockPartners.map((partner) => (
+                        <option key={partner.id} value={partner.id}>
+                          {partner.companyName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

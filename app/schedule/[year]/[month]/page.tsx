@@ -4,14 +4,36 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
+import WeekView from '@/app/components/WeekView';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects, mockTasks } from '@/app/lib/mockData';
+import { mockProjects, mockTasks, mockPersonalEvents } from '@/app/lib/mockData';
+import { CalendarDays, CheckSquare, Calendar as CalendarIcon, List } from 'lucide-react';
 
 export default function CalendarViewPage() {
   const router = useRouter();
   const params = useParams();
-  const { isAuthenticated } = useAuthStore();
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const { isAuthenticated, user } = useAuthStore();
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [showAssigneePopup, setShowAssigneePopup] = useState(false);
+  const [showProjectPopup, setShowProjectPopup] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'events' | 'tasks'>('all');
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>(mockPersonalEvents);
+  const [editingEvent, setEditingEvent] = useState<PersonalEvent | null>(null);
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+
+  type PersonalEvent = {
+    id: string;
+    title: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    userId: string;
+  };
+
   type CalendarTaskType = {
     id: string;
     name: string;
@@ -33,11 +55,51 @@ export default function CalendarViewPage() {
   const year = parseInt(params.year as string);
   const month = parseInt(params.month as string);
 
+  // 初期表示：URLパラメータまたはログインユーザー自身のタスクのみ選択
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/');
+    } else if (user && selectedAssignees.length === 0) {
+      // URLパラメータからフィルター状態を復元
+      const searchParams = new URLSearchParams(window.location.search);
+      const assigneesParam = searchParams.get('assignees');
+      const projectsParam = searchParams.get('projects');
+
+      if (assigneesParam) {
+        setSelectedAssignees(assigneesParam.split(','));
+      } else {
+        // URLパラメータがない場合はデフォルト（ログインユーザー）
+        setSelectedAssignees([user.name]);
+      }
+
+      if (projectsParam) {
+        setSelectedProjects(projectsParam.split(','));
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, user, selectedAssignees.length]);
+
+  // 週表示→月表示に戻った時、担当者フィルターをログインユーザーのみにリセット
+  useEffect(() => {
+    if (viewMode === 'month' && user) {
+      setSelectedAssignees([user.name]);
+    }
+  }, [viewMode, user]);
+
+  // ポップアップ外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.filter-popup')) {
+        setShowAssigneePopup(false);
+        setShowProjectPopup(false);
+      }
+    };
+
+    if (showAssigneePopup || showProjectPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showAssigneePopup, showProjectPopup]);
 
   if (!isAuthenticated) {
     return null;
@@ -111,11 +173,16 @@ export default function CalendarViewPage() {
       const projectTasks = mockTasks[project.id as keyof typeof mockTasks];
       if (!projectTasks) continue;
 
+      // 案件フィルタリング（全件選択または選択された案件のみ）
+      if (selectedProjects.length > 0 && !selectedProjects.includes(project.id)) {
+        continue;
+      }
+
       // 各フェーズのタスクをチェック
       for (const [phase, phaseTasks] of Object.entries(projectTasks)) {
         for (const task of phaseTasks) {
-          // 担当者名フィルタリング
-          if (assigneeFilter !== 'all' && task.assignee !== assigneeFilter) {
+          // 担当者名フィルタリング（複数選択対応）
+          if (selectedAssignees.length > 0 && !selectedAssignees.includes(task.assignee)) {
             continue;
           }
 
@@ -168,7 +235,17 @@ export default function CalendarViewPage() {
       newYear--;
     }
 
-    router.push(`/schedule/${newYear}/${newMonth}`);
+    // フィルター状態をURLパラメータとして保持
+    const params = new URLSearchParams();
+    if (selectedAssignees.length > 0) {
+      params.set('assignees', selectedAssignees.join(','));
+    }
+    if (selectedProjects.length > 0) {
+      params.set('projects', selectedProjects.join(','));
+    }
+
+    const queryString = params.toString();
+    router.push(`/schedule/${newYear}/${newMonth}${queryString ? `?${queryString}` : ''}`);
   };
 
   const handleTaskHover = (task: CalendarTaskType, event: React.MouseEvent) => {
@@ -181,6 +258,67 @@ export default function CalendarViewPage() {
     setHoveredPosition(null);
   };
 
+  // 個人予定関連の関数
+  const getEventsForDate = (day: number) => {
+    if (!day) return [];
+    const targetDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    let filteredEvents = personalEvents.filter(event => event.date === targetDate);
+
+    // 担当者フィルター適用（選択されている場合のみ）
+    if (selectedAssignees.length > 0 && selectedAssignees.length < allAssignees.length) {
+      filteredEvents = filteredEvents.filter(event => selectedAssignees.includes(event.userId));
+    }
+
+    return filteredEvents;
+  };
+
+  const handleDateClick = (day: number) => {
+    if (!day) return;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setSelectedDate(dateStr);
+    setEditingEvent(null);
+    setShowEventModal(true);
+  };
+
+  const handleAddEventClick = () => {
+    setSelectedDate(null);
+    setEditingEvent(null);
+    setShowEventModal(true);
+  };
+
+  const handleEventClick = (event: PersonalEvent) => {
+    setEditingEvent(event);
+    setSelectedDate(event.date);
+    setShowEventModal(true);
+  };
+
+  const handleSaveEvent = (eventData: { title: string; date: string; startTime: string; endTime: string }) => {
+    if (editingEvent) {
+      // 編集
+      setPersonalEvents(personalEvents.map(e =>
+        e.id === editingEvent.id
+          ? { ...e, ...eventData }
+          : e
+      ));
+    } else {
+      // 新規追加
+      const newEvent: PersonalEvent = {
+        id: Date.now().toString(),
+        ...eventData,
+        userId: user?.name || '',
+      };
+      setPersonalEvents([...personalEvents, newEvent]);
+    }
+    setShowEventModal(false);
+    setEditingEvent(null);
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    setPersonalEvents(personalEvents.filter(e => e.id !== eventId));
+    setShowEventModal(false);
+    setEditingEvent(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -189,11 +327,8 @@ export default function CalendarViewPage() {
           <div className="p-4 border-b">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <Link href="/schedule" className="text-blue-600 hover:underline">
-                  ← 工程表へ戻る
-                </Link>
                 <h2 className="text-2xl font-bold">
-                  {year}年{monthNames[month - 1]} タスク期限カレンダー
+                  {year}年{monthNames[month - 1]} カレンダー
                 </h2>
                 <div className="flex gap-3 ml-4">
                   <div className="flex items-center gap-1">
@@ -214,43 +349,250 @@ export default function CalendarViewPage() {
                   </div>
                 </div>
               </div>
+              <button
+                onClick={handleAddEventClick}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                + 予定追加
+              </button>
             </div>
+
+            {/* 表示切り替えボタン */}
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setViewMode('month')}
+                className={`px-4 py-2 rounded flex items-center gap-2 ${
+                  viewMode === 'month'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4" />
+                月表示
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode('week');
+                  // 週表示に切り替えたら全員を表示
+                  setSelectedAssignees(allAssignees);
+                }}
+                className={`px-4 py-2 rounded flex items-center gap-2 ${
+                  viewMode === 'week'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <List className="w-4 h-4" />
+                週表示
+              </button>
+            </div>
+
+            {/* タブ */}
+            <div className="mt-4 border-b flex gap-2">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-4 py-2 ${
+                  activeTab === 'all'
+                    ? 'border-b-2 border-blue-600 text-blue-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                全て
+              </button>
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`px-4 py-2 ${
+                  activeTab === 'events'
+                    ? 'border-b-2 border-green-600 text-green-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                予定
+              </button>
+              <button
+                onClick={() => setActiveTab('tasks')}
+                className={`px-4 py-2 ${
+                  activeTab === 'tasks'
+                    ? 'border-b-2 border-purple-600 text-purple-600 font-semibold'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                タスク
+              </button>
+            </div>
+
+            {/* フィルター */}
             <div className="mt-4 flex gap-4 items-center flex-wrap">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold">担当者名:</label>
-                <select
-                  value={assigneeFilter}
-                  onChange={(e) => setAssigneeFilter(e.target.value)}
-                  className="border rounded px-2 py-1 text-sm"
+              {/* 担当者フィルター（すべてのタブで表示） */}
+              <div className="relative filter-popup">
+                <button
+                  onClick={() => setShowAssigneePopup(!showAssigneePopup)}
+                  className="border rounded px-3 py-2 text-sm bg-white hover:bg-gray-50 flex items-center gap-2"
                 >
-                  <option value="all">すべて</option>
-                  {allAssignees.map(assignee => (
-                    <option key={assignee} value={assignee}>{assignee}</option>
-                  ))}
-                </select>
+                  <span className="font-semibold">担当者:</span>
+                  <span className="text-gray-600">
+                    {selectedAssignees.length === 0
+                      ? '全員'
+                      : selectedAssignees.length === allAssignees.length
+                        ? '全員'
+                        : selectedAssignees.length === 1
+                          ? selectedAssignees[0]
+                          : '複数人選択'}
+                  </span>
+                  <span>▼</span>
+                </button>
+
+                {showAssigneePopup && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg p-4 z-50 w-64">
+                    <div className="mb-2 pb-2 border-b">
+                      <label className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedAssignees.length === allAssignees.length || selectedAssignees.length === 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAssignees(allAssignees);
+                            } else {
+                              setSelectedAssignees([]);
+                            }
+                          }}
+                        />
+                        <span className="font-semibold">全員</span>
+                      </label>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1">
+                      {allAssignees.map(assignee => (
+                        <label key={assignee} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedAssignees.includes(assignee)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedAssignees([...selectedAssignees, assignee]);
+                              } else {
+                                setSelectedAssignees(selectedAssignees.filter(a => a !== assignee));
+                              }
+                            }}
+                          />
+                          <span>{assignee}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* 案件フィルター（タスク・全てタブのみ表示） */}
+              {activeTab !== 'events' && (
+              <div className="relative filter-popup">
+                <button
+                  onClick={() => setShowProjectPopup(!showProjectPopup)}
+                  className="border rounded px-3 py-2 text-sm bg-white hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <span className="font-semibold">案件:</span>
+                  <span className="text-gray-600">
+                    {selectedProjects.length === 0 ? '全件' : selectedProjects.length === mockProjects.length ? '全件' : `${selectedProjects.length}件選択中`}
+                  </span>
+                  <span>▼</span>
+                </button>
+
+                {showProjectPopup && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg p-4 z-50 w-96">
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        placeholder="🔍 案件名・受注Noで検索..."
+                        value={projectSearchQuery}
+                        onChange={(e) => setProjectSearchQuery(e.target.value)}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="mb-2 pb-2 border-b">
+                      <label className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedProjects.length === mockProjects.length || selectedProjects.length === 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedProjects(mockProjects.map(p => p.id));
+                            } else {
+                              setSelectedProjects([]);
+                            }
+                          }}
+                        />
+                        <span className="font-semibold">全件</span>
+                      </label>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1">
+                      {mockProjects
+                        .filter(project =>
+                          projectSearchQuery === '' ||
+                          project.projectName.toLowerCase().includes(projectSearchQuery.toLowerCase()) ||
+                          project.orderNo.toLowerCase().includes(projectSearchQuery.toLowerCase())
+                        )
+                        .map(project => (
+                          <label key={project.id} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedProjects.includes(project.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedProjects([...selectedProjects, project.id]);
+                                } else {
+                                  setSelectedProjects(selectedProjects.filter(p => p !== project.id));
+                                }
+                              }}
+                            />
+                            <span className="text-sm">
+                              {project.orderNo} - {project.projectName}
+                            </span>
+                          </label>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="p-6">
-          <div className="bg-white rounded shadow">
-            <div className="p-4 border-b flex justify-between items-center">
-              <button
-                onClick={() => navigateMonth(-1)}
-                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                ← 前月
-              </button>
-              <span className="text-lg font-bold">
-                {year}年 {monthNames[month - 1]}
-              </span>
-              <button
-                onClick={() => navigateMonth(1)}
-                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                次月 →
-              </button>
+          {viewMode === 'week' ? (
+            /* 週表示 */
+            <WeekView
+              currentDate={new Date(year, month - 1, 1)}
+              activeTab={activeTab}
+              selectedAssignees={selectedAssignees}
+              selectedProjects={selectedProjects}
+              personalEvents={personalEvents}
+              currentUser={user}
+              onTaskClick={(taskId, projectId) => {
+                router.push(`/projects/${projectId}`);
+              }}
+              onEventClick={handleEventClick}
+              onTaskHover={handleTaskHover}
+              onTaskLeave={handleTaskLeave}
+            />
+          ) : (
+            /* 月表示 */
+            <div className="bg-white rounded shadow">
+              <div className="p-4 border-b flex justify-between items-center">
+                <button
+                  onClick={() => navigateMonth(-1)}
+                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  ← 前月
+                </button>
+                <span className="text-lg font-bold">
+                  {year}年 {monthNames[month - 1]}
+                </span>
+                <button
+                  onClick={() => navigateMonth(1)}
+                  className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  次月 →
+                </button>
             </div>
 
             <div className="p-4">
@@ -276,15 +618,20 @@ export default function CalendarViewPage() {
                       <tr key={weekIndex}>
                         {week.map((day, dayIndex) => {
                           const tasks = day ? getTasksForDate(day) : [];
+                          const events = day ? getEventsForDate(day) : [];
                           const isToday = day === new Date().getDate() &&
                                         month === new Date().getMonth() + 1 &&
                                         year === new Date().getFullYear();
-                          const hasNoTasks = day && tasks.length === 0;
+
+                          // タブごとの表示判定
+                          const shouldShowTasks = (activeTab === 'tasks' || activeTab === 'all') && tasks.length > 0;
+                          const shouldShowEvents = (activeTab === 'events' || activeTab === 'all') && events.length > 0;
+                          const hasNoContent = day && !shouldShowTasks && !shouldShowEvents;
 
                           return (
                             <td
                               key={`${weekIndex}-${dayIndex}`}
-                              className={`border p-1 align-top ${
+                              className={`border p-1 align-top cursor-pointer hover:bg-gray-100 ${
                                 !day ? 'bg-gray-50' :
                                 isToday ? 'bg-yellow-50' :
                                 dayIndex === 0 ? 'bg-red-50' :
@@ -292,15 +639,16 @@ export default function CalendarViewPage() {
                                 ''
                               }`}
                               style={{
-                                minHeight: hasNoTasks || !day ? '80px' : 'auto',
+                                minHeight: hasNoContent || !day ? '80px' : 'auto',
                                 width: '14.28%',
-                                height: hasNoTasks || !day ? '80px' : 'auto'
+                                height: hasNoContent || !day ? '80px' : 'auto'
                               }}
+                              onClick={() => day && handleDateClick(day)}
                             >
                               {day && (
                                 <>
                                   <div className={`font-bold mb-1 ${
-                                    hasNoTasks ? 'text-sm' : 'text-lg'
+                                    hasNoContent ? 'text-sm' : 'text-lg'
                                   } ${
                                     isToday ? 'text-yellow-600' :
                                     dayIndex === 0 ? 'text-red-600' :
@@ -310,7 +658,8 @@ export default function CalendarViewPage() {
                                     {day}
                                   </div>
                                   <div className="space-y-1" style={{ fontSize: '11px' }}>
-                                    {tasks.map((task: CalendarTaskType) => (
+                                    {/* 業務タスクの表示（一番上） */}
+                                    {shouldShowTasks && tasks.map((task: CalendarTaskType) => (
                                       <div
                                         key={task.id}
                                         className={`p-0.5 rounded cursor-pointer hover:opacity-80 ${
@@ -324,8 +673,34 @@ export default function CalendarViewPage() {
                                         onMouseLeave={handleTaskLeave}
                                         title={`${task.orderNo} ${task.projectName}`}
                                       >
-                                        <div className="font-semibold truncate">{task.name}</div>
-                                        <div className="opacity-75" style={{ fontSize: '10px' }}>({task.orderNo})</div>
+                                        <div className="font-semibold truncate flex items-center gap-1">
+                                          <CheckSquare size={12} />
+                                          <span>{task.name}</span>
+                                        </div>
+                                        <div className="opacity-75 truncate" style={{ fontSize: '10px' }}>
+                                          {task.orderNo}（{task.projectName.length > 15 ? `${task.projectName.substring(0, 15)}...` : task.projectName}）
+                                        </div>
+                                      </div>
+                                    ))}
+
+                                    {/* 個人予定の表示（タスクの下） */}
+                                    {shouldShowEvents && events.map((event: PersonalEvent) => (
+                                      <div
+                                        key={event.id}
+                                        className="p-0.5 rounded cursor-pointer hover:opacity-80 bg-green-100 text-green-700 border border-green-300"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEventClick(event);
+                                        }}
+                                        title={`${event.title} (${event.startTime}-${event.endTime})`}
+                                      >
+                                        <div className="font-semibold truncate flex items-center gap-1">
+                                          <CalendarDays size={12} />
+                                          <span>{event.title}</span>
+                                        </div>
+                                        <div className="opacity-75 truncate" style={{ fontSize: '10px' }}>
+                                          {event.startTime} - {event.endTime}
+                                        </div>
                                       </div>
                                     ))}
                                   </div>
@@ -339,7 +714,8 @@ export default function CalendarViewPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -380,6 +756,99 @@ export default function CalendarViewPage() {
           </div>
         </div>
       )}
+
+      {/* 個人予定追加・編集モーダル */}
+      {showEventModal && <EventModal />}
     </div>
   );
+
+  function EventModal() {
+    const [title, setTitle] = useState(editingEvent?.title || '');
+    const [date, setDate] = useState(selectedDate || editingEvent?.date || '');
+    const [startTime, setStartTime] = useState(editingEvent?.startTime || '');
+    const [endTime, setEndTime] = useState(editingEvent?.endTime || '');
+
+    const handleSubmit = () => {
+      if (!title || !date || !startTime || !endTime) {
+        alert('すべての項目を入力してください');
+        return;
+      }
+      handleSaveEvent({ title, date, startTime, endTime });
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <h3 className="text-xl font-bold mb-4">
+            {editingEvent ? '予定を編集' : '予定を追加'}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">予定名 <span className="text-red-600">*</span></label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="予定名を入力"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">日付 <span className="text-red-600">*</span></label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">開始時刻 <span className="text-red-600">*</span></label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">終了時刻 <span className="text-red-600">*</span></label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex gap-2 justify-end">
+            {editingEvent && (
+              <button
+                onClick={() => {
+                  if (confirm('この予定を削除しますか？')) {
+                    handleDeleteEvent(editingEvent.id);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                削除
+              </button>
+            )}
+            <button
+              onClick={() => setShowEventModal(false)}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

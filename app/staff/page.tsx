@@ -6,12 +6,9 @@ import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
 
-export default function SettingsPage() {
+export default function StaffPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
-  const [alert3Days, setAlert3Days] = useState(true);
-  const [alert1Day, setAlert1Day] = useState(true);
-  const [alertToday, setAlertToday] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -35,48 +32,11 @@ export default function SettingsPage() {
       <div className="content-area">
         <div className="bg-white shadow">
           <div className="p-4 border-b">
-            <h2 className="text-2xl font-bold">システム設定</h2>
+            <h2 className="text-2xl font-bold">従業員管理</h2>
           </div>
         </div>
 
         <div className="p-6">
-          <div className="bg-white rounded shadow mb-6">
-            <div className="p-4 border-b bg-gray-50">
-              <h3 className="font-bold">アラート設定</h3>
-            </div>
-            <div className="p-4">
-              <div className="space-y-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={alert3Days}
-                    onChange={(e) => setAlert3Days(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span>期限3日前にアラート表示（黄色）</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={alert1Day}
-                    onChange={(e) => setAlert1Day(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span>期限前日にアラート表示（オレンジ）</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={alertToday}
-                    onChange={(e) => setAlertToday(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span>期限当日にアラート表示（赤）</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
           <div className="bg-white rounded shadow">
             <div className="p-4 border-b bg-gray-50">
               <h3 className="font-bold">社員マスター</h3>
@@ -105,7 +65,7 @@ export default function SettingsPage() {
                 </tbody>
               </table>
               <Link
-                href="/settings/staff/new"
+                href="/staff/staff/new"
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 inline-block"
               >
                 ＋ 社員追加
