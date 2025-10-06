@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 基本フォント設定 */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
 /* サイドバー固定レイアウト */
 .sidebar {
   position: fixed;

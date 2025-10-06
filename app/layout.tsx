@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 
@@ -12,6 +12,13 @@ const notoSansJP = Noto_Sans_JP({
 export const metadata: Metadata = {
   title: "Do Project 進捗管理システム",
   description: "建設工事の進捗管理システム",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
