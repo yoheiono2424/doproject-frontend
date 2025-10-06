@@ -55,7 +55,7 @@ export default function WeekView({
   onTaskLeave
 }: WeekViewProps) {
   // 初期表示：本日が含まれる週の日曜日を取得
-  const [weekStartDate, setWeekStartDate] = useState(() => getCurrentWeekStart(new Date()));
+  const [weekStartDate, setWeekStartDate] = useState(() => getCurrentWeekStart());
 
   // 週の7日間を取得
   const weekDays = getWeekDays(weekStartDate);
