@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects, mockTasks } from '@/app/lib/mockData';
+import { mockProjects, mockTasks, mockStaff } from '@/app/lib/mockData';
 
 export default function TaskManagementPage() {
   const params = useParams();
@@ -21,25 +21,35 @@ export default function TaskManagementPage() {
     assignee?: string;
   };
 
-  type TasksType = {
-    [key: string]: TaskType[];
+  type EditableTaskType = TaskType & {
+    phaseName: string;
   };
-
-  const [editingTask, setEditingTask] = useState<{ id: string; name: string; assignee?: string; deadline?: string; phaseName: string; completed: boolean } | null>(null);
-  const [formData, setFormData] = useState({
-    assignee: '',
-    deadline: '',
-    changeReason: ''
-  });
 
   const project = mockProjects.find(p => p.id === projectId);
   const tasks = mockTasks[projectId as keyof typeof mockTasks] || {};
+
+  // 【v2.26】全タスクをフラット化して編集可能な状態で管理
+  const [editableTasks, setEditableTasks] = useState<EditableTaskType[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/');
     }
   }, [isAuthenticated, router]);
+
+  // 初期データの読み込み
+  useEffect(() => {
+    const flatTasks: EditableTaskType[] = [];
+    Object.entries(tasks).forEach(([phaseName, phaseTasks]) => {
+      phaseTasks.forEach((task) => {
+        flatTasks.push({
+          ...task,
+          phaseName,
+        });
+      });
+    });
+    setEditableTasks(flatTasks);
+  }, [projectId]);
 
   if (!isAuthenticated) {
     return null;
@@ -61,52 +71,60 @@ export default function TaskManagementPage() {
     );
   }
 
-  // タスクの編集開始
-  const handleEditTask = (task: TaskType, phaseName: string) => {
-    setEditingTask({ ...task, phaseName });
-    setFormData({
-      assignee: task.assignee || '',
-      deadline: task.deadline || '',
-      changeReason: ''
-    });
+  // タスクの値を更新
+  const updateTask = (taskId: string, field: 'assignee' | 'deadline', value: string) => {
+    setEditableTasks(editableTasks.map(task =>
+      task.id === taskId ? { ...task, [field]: value } : task
+    ));
   };
 
-  // フォーム入力の処理
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  // タスクを削除
+  const deleteTask = (taskId: string) => {
+    if (confirm('このタスクを削除しますか？')) {
+      setEditableTasks(editableTasks.filter(task => task.id !== taskId));
+    }
   };
 
-  // 保存処理
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!editingTask) return;
-
-    console.log('タスク更新:', {
-      projectId,
-      taskId: editingTask.id,
-      taskName: editingTask.name,
-      phaseName: editingTask.phaseName,
-      originalAssignee: editingTask.assignee,
-      newAssignee: formData.assignee,
-      originalDeadline: editingTask.deadline,
-      newDeadline: formData.deadline,
-      changeReason: formData.changeReason
-    });
-    alert(`「${editingTask.name}」を更新しました（実装：操作ログに記録）`);
-
-    handleCancelEdit();
-  };
-
-  // 編集のキャンセル
-  const handleCancelEdit = () => {
-    setEditingTask(null);
-    setFormData({
-      assignee: '',
+  // タスクを追加
+  const addTask = (phaseName: string) => {
+    const newTaskId = `t${Date.now()}`;
+    const newTask: EditableTaskType = {
+      id: newTaskId,
+      name: '新しいタスク',
+      completed: false,
       deadline: '',
-      changeReason: ''
-    });
+      assignee: '',
+      phaseName,
+    };
+    setEditableTasks([...editableTasks, newTask]);
+  };
+
+  // タスク名を更新
+  const updateTaskName = (taskId: string, name: string) => {
+    setEditableTasks(editableTasks.map(task =>
+      task.id === taskId ? { ...task, name } : task
+    ));
+  };
+
+  // 【v2.26】保存して完了
+  const handleSaveAndComplete = () => {
+    console.log('保存して完了:', editableTasks);
+    alert('タスクを保存しました。案件ステータスを「進行中」に変更しました。');
+    router.push(`/projects/${projectId}`);
+  };
+
+  // 【v2.26】保存のみ
+  const handleSaveOnly = () => {
+    console.log('保存のみ:', editableTasks);
+    alert('タスクを保存しました。');
+    router.push(`/projects/${projectId}`);
+  };
+
+  // 【v2.26】キャンセル
+  const handleCancel = () => {
+    if (confirm('変更を破棄して戻りますか？')) {
+      router.push(`/projects/${projectId}`);
+    }
   };
 
   // 期限の緊急度を判定
@@ -130,38 +148,12 @@ export default function TaskManagementPage() {
     return 'bg-blue-50 border-l-4 border-blue-400';
   };
 
-  // 全担当者リストを取得
-  const getAllAssignees = () => {
-    const assignees = new Set<string>();
-    for (const phaseTasks of Object.values(tasks)) {
-      for (const task of phaseTasks) {
-        if (!['事務', '現場', '事務・現場', '現場→事務'].includes(task.assignee)) {
-          assignees.add(task.assignee);
-        }
-      }
-    }
-    return Array.from(assignees).sort();
-  };
-
-  const allAssignees = getAllAssignees();
-
-  // フェーズ情報の取得
-  const getPhaseInfo = () => {
-    const phases = ['契約フェーズ', '着工準備フェーズ', '施工フェーズ', '竣工フェーズ'];
-    return phases.map(phaseName => {
-      const phaseTasks: TaskType[] = (tasks as TasksType)[phaseName] || [];
-      const tasksWithDeadlines = phaseTasks.filter(task => task.deadline);
-
-      return {
-        phaseName,
-        taskCount: phaseTasks.length,
-        tasksWithDeadlines: tasksWithDeadlines.length,
-        tasks: phaseTasks
-      };
-    });
-  };
-
-  const phaseInfo = getPhaseInfo();
+  // フェーズごとにタスクをグループ化
+  const phases = ['契約フェーズ', '着工準備フェーズ', '施工フェーズ', '竣工フェーズ'];
+  const tasksByPhase = phases.map(phaseName => ({
+    phaseName,
+    tasks: editableTasks.filter(task => task.phaseName === phaseName),
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -184,122 +176,124 @@ export default function TaskManagementPage() {
         </div>
 
         <div className="p-6">
-          {editingTask ? (
-            // 期限編集フォーム
-            <div className="bg-white rounded shadow">
-              <div className="p-4 border-b bg-gray-50">
-                <h3 className="font-bold">タスク変更: {editingTask.name}</h3>
-              </div>
-              <div className="p-6">
-                <form onSubmit={handleSave}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">
-                      担当者 <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="assignee"
-                      value={formData.assignee}
-                      onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
-                      required
-                    >
-                      <option value="">選択してください</option>
-                      {allAssignees.map(assignee => (
-                        <option key={assignee} value={assignee}>{assignee}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">新しい期限</label>
-                    <input
-                      type="date"
-                      name="deadline"
-                      value={formData.deadline}
-                      onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium mb-1">変更理由（任意）</label>
-                    <textarea
-                      name="changeReason"
-                      value={formData.changeReason}
-                      onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
-                      rows={3}
-                      placeholder="変更の理由や詳細を入力してください"
-                    />
-                  </div>
-                  <div className="flex gap-4">
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-                    >
-                      更新
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700"
-                    >
-                      キャンセル
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          ) : (
-            // フェーズ・タスク一覧
-            <div className="space-y-6">
-              {phaseInfo.map((phase) => (
-                <div key={phase.phaseName} className="bg-white rounded shadow">
-                  <div className="p-4 border-b bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-bold text-lg">{phase.phaseName}</h3>
-                        <div className="text-sm text-gray-600 mt-1">
-                          タスク数: {phase.taskCount}件 | 期限設定済み: {phase.tasksWithDeadlines}件
-                        </div>
+          {/* 【v2.26】保存オプションボタン（上部に移動） */}
+          <div className="mb-6 flex gap-3 bg-white p-3 rounded shadow">
+            <button
+              onClick={handleSaveAndComplete}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-semibold"
+            >
+              保存して完了（ステータスを「進行中」に変更）
+            </button>
+            <button
+              onClick={handleSaveOnly}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-semibold"
+            >
+              保存のみ（ステータス変更なし）
+            </button>
+            <button
+              onClick={handleCancel}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm font-semibold"
+            >
+              キャンセル
+            </button>
+          </div>
+
+          {/* フェーズ別タスク一覧（一括編集モード） */}
+          <div className="space-y-4">
+            {tasksByPhase.map((phase) => (
+              <div key={phase.phaseName} className="bg-white rounded shadow">
+                <div className="p-3 border-b bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-base">{phase.phaseName}</h3>
+                      <div className="text-xs text-gray-600 mt-0.5">
+                        タスク数: {phase.tasks.length}件
                       </div>
                     </div>
+                    <button
+                      onClick={() => addTask(phase.phaseName)}
+                      className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
+                    >
+                      ＋ タスク追加
+                    </button>
                   </div>
-                  <div className="p-4">
-                    <div className="space-y-2">
-                      {phase.tasks.map((task: TaskType) => (
-                        <div
-                          key={task.id}
-                          className={`p-3 border rounded ${getUrgencyClass(task.deadline)}`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{task.name}</div>
-                              <div className="text-sm text-gray-600">
-                                担当者: {task.assignee}
-                                {task.deadline && (
-                                  <span className="ml-4">期限: {task.deadline}</span>
-                                )}
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleEditTask(task, phase.phaseName)}
-                              className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200"
+                </div>
+                <div className="p-3">
+                  <div className="space-y-2">
+                    {phase.tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className={`p-2 border rounded ${getUrgencyClass(task.deadline)}`}
+                      >
+                        <div className="grid grid-cols-12 gap-2 items-center">
+                          {/* タスク名 */}
+                          <div className="col-span-4">
+                            <label className="block text-xs text-gray-600 mb-0.5">
+                              タスク名
+                            </label>
+                            <input
+                              type="text"
+                              value={task.name}
+                              onChange={(e) => updateTaskName(task.id, e.target.value)}
+                              className="w-full border rounded px-2 py-1 text-sm"
+                            />
+                          </div>
+
+                          {/* 担当者 */}
+                          <div className="col-span-3">
+                            <label className="block text-xs text-gray-600 mb-0.5">
+                              担当者 <span className="text-red-600">*</span>
+                            </label>
+                            <select
+                              value={task.assignee || ''}
+                              onChange={(e) => updateTask(task.id, 'assignee', e.target.value)}
+                              className="w-full border rounded px-2 py-1 text-sm"
+                              required
                             >
-                              変更
+                              <option value="">選択してください</option>
+                              {mockStaff.map((staff) => (
+                                <option key={staff.id} value={staff.name}>
+                                  {staff.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* 期限 */}
+                          <div className="col-span-3">
+                            <label className="block text-xs text-gray-600 mb-0.5">
+                              期限
+                            </label>
+                            <input
+                              type="date"
+                              value={task.deadline || ''}
+                              onChange={(e) => updateTask(task.id, 'deadline', e.target.value)}
+                              className="w-full border rounded px-2 py-1 text-sm"
+                            />
+                          </div>
+
+                          {/* 削除ボタン */}
+                          <div className="col-span-2 flex justify-end">
+                            <button
+                              onClick={() => deleteTask(task.id)}
+                              className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs hover:bg-red-200"
+                            >
+                              削除
                             </button>
                           </div>
                         </div>
-                      ))}
-                      {phase.tasks.length === 0 && (
-                        <div className="text-center py-4 text-gray-500">
-                          このフェーズにはタスクがありません
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
+                    {phase.tasks.length === 0 && (
+                      <div className="text-center py-6 text-gray-500 text-sm">
+                        このフェーズにはタスクがありません
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

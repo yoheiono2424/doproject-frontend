@@ -5,12 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects } from '@/app/lib/mockData';
+import { mockProjects, mockPartners } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function ProjectEditPage() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { canEditProjectDetails } = usePermissions();
   const projectId = params.id as string;
 
   const project = mockProjects.find(p => p.id === projectId);
@@ -20,6 +22,7 @@ export default function ProjectEditPage() {
     contractType: '',
     projectType: '',
     amount: '',
+    partnerId: '',
     clientName: '',
     siteName: '',
     projectName: '',
@@ -44,6 +47,7 @@ export default function ProjectEditPage() {
         contractType: project.contractType,
         projectType: project.type,
         amount: project.amount.toString(),
+        partnerId: project.partnerId || '',
         clientName: project.clientName,
         siteName: project.siteName,
         projectName: project.projectName,
@@ -76,6 +80,9 @@ export default function ProjectEditPage() {
       </div>
     );
   }
+
+  // 一般ユーザーは協力会社のみ編集可能
+  const isRestrictedUser = !canEditProjectDetails();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -136,6 +143,9 @@ export default function ProjectEditPage() {
             <div className="bg-white rounded shadow mb-6">
               <div className="p-4 border-b bg-gray-50">
                 <h3 className="font-bold">案件基本情報</h3>
+                {isRestrictedUser && (
+                  <p className="text-sm text-gray-600 mt-1">※ 一般ユーザーは協力会社のみ編集できます</p>
+                )}
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4">
@@ -148,7 +158,8 @@ export default function ProjectEditPage() {
                       name="orderNo"
                       value={formData.orderNo}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                       required
                     />
                   </div>
@@ -160,7 +171,8 @@ export default function ProjectEditPage() {
                       name="contractType"
                       value={formData.contractType}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                       required
                     >
                       <option value="">選択してください</option>
@@ -176,7 +188,8 @@ export default function ProjectEditPage() {
                       name="projectType"
                       value={formData.projectType}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                       required
                     >
                       <option value="機械">機械</option>
@@ -190,9 +203,26 @@ export default function ProjectEditPage() {
                       name="amount"
                       value={formData.amount}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                       placeholder="千円単位"
+                      disabled={isRestrictedUser}
                     />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-1">協力会社</label>
+                    <select
+                      name="partnerId"
+                      value={formData.partnerId}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
+                    >
+                      <option value="">選択してください（任意）</option>
+                      {mockPartners.map((partner) => (
+                        <option key={partner.id} value={partner.id}>
+                          {partner.companyName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -214,7 +244,8 @@ export default function ProjectEditPage() {
                       name="clientName"
                       value={formData.clientName}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                       required
                     />
                   </div>
@@ -225,7 +256,8 @@ export default function ProjectEditPage() {
                       name="siteName"
                       value={formData.siteName}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                     />
                   </div>
                   <div className="col-span-2">
@@ -237,7 +269,8 @@ export default function ProjectEditPage() {
                       name="projectName"
                       value={formData.projectName}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                       required
                     />
                   </div>
@@ -248,7 +281,8 @@ export default function ProjectEditPage() {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                     />
                   </div>
                   <div>
@@ -258,7 +292,8 @@ export default function ProjectEditPage() {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                     />
                   </div>
                   <div>
@@ -267,7 +302,8 @@ export default function ProjectEditPage() {
                       name="manager"
                       value={formData.manager}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                     >
                       <option value="">選択してください</option>
                       <option value="田中">田中</option>
@@ -286,17 +322,19 @@ export default function ProjectEditPage() {
                       name="engineer"
                       value={formData.engineer}
                       onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
+                      className={`w-full border rounded px-3 py-2 ${isRestrictedUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
+                      disabled={isRestrictedUser}
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="flex items-center">
+                    <label className={`flex items-center ${isRestrictedUser ? 'text-gray-500 cursor-not-allowed' : ''}`}>
                       <input
                         type="checkbox"
                         name="exclusive"
                         checked={formData.exclusive}
                         onChange={handleInputChange}
                         className="mr-2"
+                        disabled={isRestrictedUser}
                       />
                       <span>専任配置</span>
                     </label>

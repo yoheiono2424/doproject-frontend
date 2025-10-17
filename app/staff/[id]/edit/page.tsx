@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
+import { mockStaff } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 import {
   User,
   Phone,
@@ -15,10 +17,13 @@ import {
   Camera
 } from 'lucide-react';
 
-export default function StaffRegisterPage() {
+export default function StaffEditPage() {
   const router = useRouter();
+  const params = useParams();
   const { isAuthenticated } = useAuthStore();
+  const { canAccessEmployeeManagement } = usePermissions();
   const [activeTab, setActiveTab] = useState('basic');
+  const staffId = params.id as string;
 
   // 建設キャリアの型定義
   type Career = {
@@ -109,14 +114,65 @@ export default function StaffRegisterPage() {
   const [licensePreviews, setLicensePreviews] = useState<string[]>(['', '']);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  // 認証チェック
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/');
     }
   }, [isAuthenticated, router]);
 
+  // 既存データの読み込み
+  useEffect(() => {
+    if (isAuthenticated && staffId) {
+      const employee = mockStaff.find(emp => emp.id === staffId);
+      if (employee) {
+        // 基本情報をformDataにセット（TODO: 実際のデータ構造に合わせて調整）
+        setFormData(prev => ({
+          ...prev,
+          name: employee.name || '',
+          employeeNumber: employee.employeeId || '',
+          jobTitle: employee.jobTitle || '',
+          department: employee.department || '',
+          companyPhone: employee.companyPhone || '',
+          companyEmail: employee.companyEmail || '',
+          specialty: employee.specialty || '',
+          // hasAdminPermission: employee.hasAdminPermission || false, // TODO: mockDataに追加後有効化
+        }));
+      } else {
+        // 従業員が見つからない場合は一覧に戻る
+        alert('従業員が見つかりません');
+        router.push('/staff');
+      }
+    }
+  }, [isAuthenticated, staffId, router]);
+
   if (!isAuthenticated) {
     return null;
+  }
+
+  // 権限チェック：高権限ユーザー以外はアクセス不可
+  if (!canAccessEmployeeManagement()) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="content-area">
+          <div className="bg-white shadow">
+            <div className="p-4 border-b">
+              <h2 className="text-2xl font-bold">社員情報編集</h2>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="bg-white rounded shadow p-6 text-center">
+              <p className="text-red-600 text-lg font-bold mb-4">アクセス権限がありません</p>
+              <p className="text-gray-600 mb-6">この機能は部長クラス以上、総務部、または個別権限を持つユーザーのみ利用できます。</p>
+              <Link href="/dashboard" className="text-blue-600 hover:underline">
+                ← ダッシュボードに戻る
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -256,10 +312,10 @@ export default function StaffRegisterPage() {
       return;
     }
 
-    // ここで実際の登録処理を行う
-    console.log('登録データ:', { formData, qualifications, careers, profileImage, licenseImages });
-    alert('社員を登録しました');
-    router.push('/settings');
+    // ここで実際の更新処理を行う
+    console.log('更新データ:', { formData, qualifications, careers, profileImage, licenseImages });
+    alert('社員情報を更新しました');
+    router.push(`/staff/${staffId}`);
   };
 
   const tabs = [
@@ -276,8 +332,8 @@ export default function StaffRegisterPage() {
       <div className="content-area">
         <div className="bg-white shadow">
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="text-2xl font-bold">新規社員登録</h2>
-            <Link href="/staff" className="text-blue-600 hover:underline">
+            <h2 className="text-2xl font-bold">社員情報編集</h2>
+            <Link href={`/staff/${staffId}`} className="text-blue-600 hover:underline">
               ← キャンセル
             </Link>
           </div>
@@ -666,7 +722,7 @@ export default function StaffRegisterPage() {
                       </div>
                     </div>
 
-            {/* 専門分野・資格は既存のコードを移動 */}
+                    {/* 専門分野・資格 */}
                     <div>
                       <h3 className="font-bold text-lg border-b pb-2 mb-4">専門分野・資格</h3>
                       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -707,83 +763,83 @@ export default function StaffRegisterPage() {
                         </div>
                       </div>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">保有資格（複数選択可）</label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.firstClassElectrical}
-                        onChange={() => handleQualificationChange('firstClassElectrical')}
-                        className="mr-2"
-                      />
-                      <span>1級電気工事施工管理技士</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.secondClassElectrical}
-                        onChange={() => handleQualificationChange('secondClassElectrical')}
-                        className="mr-2"
-                      />
-                      <span>2級電気工事施工管理技士</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.firstClassPiping}
-                        onChange={() => handleQualificationChange('firstClassPiping')}
-                        className="mr-2"
-                      />
-                      <span>1級管工事施工管理技士</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.secondClassPiping}
-                        onChange={() => handleQualificationChange('secondClassPiping')}
-                        className="mr-2"
-                      />
-                      <span>2級管工事施工管理技士</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.firstTypeElectrical}
-                        onChange={() => handleQualificationChange('firstTypeElectrical')}
-                        className="mr-2"
-                      />
-                      <span>第一種電気工事士</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.secondTypeElectrical}
-                        onChange={() => handleQualificationChange('secondTypeElectrical')}
-                        className="mr-2"
-                      />
-                      <span>第二種電気工事士</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.safetyOfficer}
-                        onChange={() => handleQualificationChange('safetyOfficer')}
-                        className="mr-2"
-                      />
-                      <span>安全衛生責任者</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={qualifications.other}
-                        onChange={() => handleQualificationChange('other')}
-                        className="mr-2"
-                      />
-                      <span>その他</span>
-                    </label>
-                  </div>
-                </div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">保有資格（複数選択可）</label>
+                        <div className="space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.firstClassElectrical}
+                              onChange={() => handleQualificationChange('firstClassElectrical')}
+                              className="mr-2"
+                            />
+                            <span>1級電気工事施工管理技士</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.secondClassElectrical}
+                              onChange={() => handleQualificationChange('secondClassElectrical')}
+                              className="mr-2"
+                            />
+                            <span>2級電気工事施工管理技士</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.firstClassPiping}
+                              onChange={() => handleQualificationChange('firstClassPiping')}
+                              className="mr-2"
+                            />
+                            <span>1級管工事施工管理技士</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.secondClassPiping}
+                              onChange={() => handleQualificationChange('secondClassPiping')}
+                              className="mr-2"
+                            />
+                            <span>2級管工事施工管理技士</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.firstTypeElectrical}
+                              onChange={() => handleQualificationChange('firstTypeElectrical')}
+                              className="mr-2"
+                            />
+                            <span>第一種電気工事士</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.secondTypeElectrical}
+                              onChange={() => handleQualificationChange('secondTypeElectrical')}
+                              className="mr-2"
+                            />
+                            <span>第二種電気工事士</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.safetyOfficer}
+                              onChange={() => handleQualificationChange('safetyOfficer')}
+                              className="mr-2"
+                            />
+                            <span>安全衛生責任者</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={qualifications.other}
+                              onChange={() => handleQualificationChange('other')}
+                              className="mr-2"
+                            />
+                            <span>その他</span>
+                          </label>
+                        </div>
+                      </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -1127,7 +1183,7 @@ export default function StaffRegisterPage() {
             {/* ボタン */}
             <div className="mt-6 flex justify-end space-x-4">
               <Link
-                href="/staff"
+                href={`/staff/${staffId}`}
                 className="px-6 py-2 border rounded hover:bg-gray-50 inline-block"
               >
                 キャンセル
@@ -1136,7 +1192,7 @@ export default function StaffRegisterPage() {
                 type="submit"
                 className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
               >
-                登録する
+                更新する
               </button>
             </div>
           </form>

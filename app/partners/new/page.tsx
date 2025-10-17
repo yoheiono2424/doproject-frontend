@@ -12,8 +12,10 @@ export default function NewPartnerPage() {
     companyName: '',
     companyNameKana: '',
     representative: '',
+    contactName: '',
     address: '',
     phone: '',
+    contactPhone: '',
     email: '',
     notes: '',
   });
@@ -97,9 +99,9 @@ export default function NewPartnerPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-        {/* 基本情報 */}
+        {/* 会社情報 */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold mb-4 border-b pb-2">基本情報</h2>
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">会社情報</h2>
           <div className="grid grid-cols-2 gap-4">
             {/* 会社名 */}
             <div>
@@ -154,10 +156,10 @@ export default function NewPartnerPage() {
               />
             </div>
 
-            {/* 電話番号 */}
+            {/* 会社の電話番号 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                電話番号 <span className="text-red-500">*</span>
+                会社の電話番号 <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -185,19 +187,6 @@ export default function NewPartnerPage() {
               />
             </div>
 
-            {/* メールアドレス */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder="info@example.com"
-              />
-            </div>
-
             {/* 備考 */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
@@ -208,6 +197,51 @@ export default function NewPartnerPage() {
                 rows={3}
                 className="w-full p-2 border border-gray-300 rounded"
                 placeholder="特記事項があれば記載してください"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 担当者情報 */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">担当者情報</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {/* 担当者名 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者名</label>
+              <input
+                type="text"
+                name="contactName"
+                value={formData.contactName}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="佐藤一郎"
+              />
+            </div>
+
+            {/* 担当者の電話番号 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者の電話番号</label>
+              <input
+                type="tel"
+                name="contactPhone"
+                value={formData.contactPhone}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="090-1234-5678"
+              />
+            </div>
+
+            {/* 担当者のメールアドレス */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者のメールアドレス</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="tanaka@example.com"
               />
             </div>
           </div>

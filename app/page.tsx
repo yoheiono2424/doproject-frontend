@@ -57,6 +57,25 @@ export default function LoginPage() {
             ログイン
           </button>
         </div>
+
+        {/* テスト用アカウント情報 */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <p className="text-center text-sm font-medium text-gray-600 mb-3">
+            ─── テスト用アカウント ───
+          </p>
+          <div className="space-y-3 text-sm">
+            <div className="bg-blue-50 p-3 rounded">
+              <p className="font-bold text-blue-900 mb-1">【部長クラス以上（高権限）】</p>
+              <p className="text-gray-700">ID: bucho@example.com</p>
+              <p className="text-gray-700">PW: password123</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="font-bold text-gray-900 mb-1">【一般ユーザー】</p>
+              <p className="text-gray-700">ID: ippan@example.com</p>
+              <p className="text-gray-700">PW: password123</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

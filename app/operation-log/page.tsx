@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
+import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function OperationLogPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { canAccessOperationLog } = usePermissions();
   const [startDate, setStartDate] = useState('2025-01-16');
   const [endDate, setEndDate] = useState('2025-01-16');
   const [filterOperation, setFilterOperation] = useState('all');
@@ -21,6 +24,31 @@ export default function OperationLogPage() {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  // 権限チェック：高権限ユーザー以外はアクセス不可
+  if (!canAccessOperationLog()) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="content-area">
+          <div className="bg-white shadow">
+            <div className="p-4 border-b">
+              <h2 className="text-2xl font-bold">操作履歴</h2>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="bg-white rounded shadow p-6 text-center">
+              <p className="text-red-600 text-lg font-bold mb-4">アクセス権限がありません</p>
+              <p className="text-gray-600 mb-6">この機能は部長クラス以上、総務部、または個別権限を持つユーザーのみ利用できます。</p>
+              <Link href="/dashboard" className="text-blue-600 hover:underline">
+                ← ダッシュボードに戻る
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const logs = [

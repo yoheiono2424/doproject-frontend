@@ -17,8 +17,10 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
     companyName: partner?.companyName || '',
     companyNameKana: partner?.companyNameKana || '',
     representative: partner?.representative || '',
+    contactName: '', // 協力会社データには存在しないため空文字列で初期化
     address: partner?.address || '',
     phone: partner?.phone || '',
+    contactPhone: '', // 協力会社データには存在しないため空文字列で初期化
     email: partner?.email || '',
     notes: partner?.notes || '',
   });
@@ -134,9 +136,9 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-        {/* 基本情報 */}
+        {/* 会社情報 */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold mb-4 border-b pb-2">基本情報</h2>
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">会社情報</h2>
           <div className="grid grid-cols-2 gap-4">
             {/* 会社名 */}
             <div>
@@ -151,6 +153,7 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
                 className={`w-full p-2 border rounded ${
                   errors.companyName ? 'border-red-500' : 'border-gray-300'
                 }`}
+                placeholder="株式会社〇〇"
               />
               {errors.companyName && (
                 <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>
@@ -170,6 +173,7 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
                 className={`w-full p-2 border rounded ${
                   errors.companyNameKana ? 'border-red-500' : 'border-gray-300'
                 }`}
+                placeholder="カブシキガイシャマルマル"
               />
               {errors.companyNameKana && (
                 <p className="text-red-500 text-sm mt-1">{errors.companyNameKana}</p>
@@ -185,13 +189,14 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
                 value={formData.representative}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded"
+                placeholder="山田太郎"
               />
             </div>
 
-            {/* 電話番号 */}
+            {/* 会社の電話番号 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                電話番号 <span className="text-red-500">*</span>
+                会社の電話番号 <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -201,6 +206,7 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
                 className={`w-full p-2 border rounded ${
                   errors.phone ? 'border-red-500' : 'border-gray-300'
                 }`}
+                placeholder="03-1234-5678"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
@@ -214,18 +220,7 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
                 value={formData.address}
                 onChange={handleChange}
                 className="w-full p-2 border border-gray-300 rounded"
-              />
-            </div>
-
-            {/* メールアドレス */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="東京都千代田区〇〇1-1-1"
               />
             </div>
 
@@ -238,14 +233,60 @@ export default function EditPartnerPage({ params }: { params: Promise<{ id: stri
                 onChange={handleChange}
                 rows={3}
                 className="w-full p-2 border border-gray-300 rounded"
+                placeholder="特記事項があれば記載してください"
               />
             </div>
           </div>
         </div>
 
-        {/* 書類管理 */}
+        {/* 担当者情報 */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold mb-4 border-b pb-2">書類管理</h2>
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">担当者情報</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {/* 担当者名 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者名</label>
+              <input
+                type="text"
+                name="contactName"
+                value={formData.contactName}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="佐藤一郎"
+              />
+            </div>
+
+            {/* 担当者の電話番号 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者の電話番号</label>
+              <input
+                type="tel"
+                name="contactPhone"
+                value={formData.contactPhone}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="090-1234-5678"
+              />
+            </div>
+
+            {/* 担当者のメールアドレス */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">担当者のメールアドレス</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded"
+                placeholder="tanaka@example.com"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 書類アップロード */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">書類アップロード</h2>
 
           {/* 既存書類 */}
           {existingDocuments.length > 0 && (

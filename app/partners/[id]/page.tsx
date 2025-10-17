@@ -76,9 +76,9 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 基本情報 */}
+        {/* 会社情報 */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4 border-b pb-2">基本情報</h2>
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">会社情報</h2>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-600">会社名</label>
@@ -89,8 +89,16 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex items-start gap-2">
               <User size={20} className="text-gray-400 mt-1" />
               <div>
-                <label className="text-sm font-medium text-gray-600">代表者</label>
+                <label className="text-sm font-medium text-gray-600">代表者名</label>
                 <p>{partner.representative || '-'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <Phone size={20} className="text-gray-400 mt-1" />
+              <div>
+                <label className="text-sm font-medium text-gray-600">会社の電話番号</label>
+                <p>{partner.phone}</p>
               </div>
             </div>
 
@@ -99,22 +107,6 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
               <div>
                 <label className="text-sm font-medium text-gray-600">所在地</label>
                 <p>{partner.address || '-'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Phone size={20} className="text-gray-400 mt-1" />
-              <div>
-                <label className="text-sm font-medium text-gray-600">電話番号</label>
-                <p>{partner.phone}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Mail size={20} className="text-gray-400 mt-1" />
-              <div>
-                <label className="text-sm font-medium text-gray-600">メールアドレス</label>
-                <p>{partner.email || '-'}</p>
               </div>
             </div>
 
@@ -132,39 +124,69 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        {/* 書類一覧 */}
+        {/* 担当者情報 */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4 border-b pb-2 flex items-center gap-2">
-            <FileText size={24} />
-            書類一覧
-          </h2>
-          {documents.length > 0 ? (
-            <div className="space-y-3">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="border border-gray-200 rounded p-3 hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{doc.fileName}</p>
-                      <div className="flex gap-4 text-sm text-gray-500 mt-1">
-                        <span>{formatFileSize(doc.fileSize)}</span>
-                        <span>登録日: {doc.uploadedDate}</span>
-                      </div>
-                    </div>
-                    <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                      <Download size={18} />
-                      DL
-                    </button>
-                  </div>
-                </div>
-              ))}
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">担当者情報</h2>
+          <div className="space-y-4">
+            <div className="flex items-start gap-2">
+              <User size={20} className="text-gray-400 mt-1" />
+              <div>
+                <label className="text-sm font-medium text-gray-600">担当者名</label>
+                <p>-</p>
+              </div>
             </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">登録されている書類はありません</p>
-          )}
+
+            <div className="flex items-start gap-2">
+              <Phone size={20} className="text-gray-400 mt-1" />
+              <div>
+                <label className="text-sm font-medium text-gray-600">担当者の電話番号</label>
+                <p>-</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <Mail size={20} className="text-gray-400 mt-1" />
+              <div>
+                <label className="text-sm font-medium text-gray-600">担当者のメールアドレス</label>
+                <p>{partner.email || '-'}</p>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* 書類一覧 */}
+      <div className="mt-6 bg-white rounded-lg shadow p-6">
+        <h2 className="text-xl font-bold mb-4 border-b pb-2 flex items-center gap-2">
+          <FileText size={24} />
+          書類一覧
+        </h2>
+        {documents.length > 0 ? (
+          <div className="space-y-3">
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="border border-gray-200 rounded p-3 hover:bg-gray-50 transition"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{doc.fileName}</p>
+                    <div className="flex gap-4 text-sm text-gray-500 mt-1">
+                      <span>{formatFileSize(doc.fileSize)}</span>
+                      <span>登録日: {doc.uploadedDate}</span>
+                    </div>
+                  </div>
+                  <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    <Download size={18} />
+                    DL
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">登録されている書類はありません</p>
+        )}
       </div>
 
       {/* 案件履歴 */}

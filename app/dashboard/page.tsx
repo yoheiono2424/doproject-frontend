@@ -234,6 +234,48 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-6">
+          {/* 【v2.26新規】タスク割り当て依頼アラート */}
+          {(() => {
+            const taskAssignmentProjects = mockProjects.filter(p => p.status === 'タスク割当');
+            if (taskAssignmentProjects.length === 0) return null;
+
+            return (
+              <div className="mb-6">
+                <div className="bg-orange-50 border-l-4 border-orange-500 rounded shadow p-4">
+                  <h3 className="font-bold text-orange-700 text-lg mb-3">
+                    📋 タスク割り当て依頼が{taskAssignmentProjects.length}件あります
+                  </h3>
+                  <div className="bg-white rounded overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-100 border-b">
+                        <tr>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">受注No</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">案件名</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">担当者</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">工期開始日</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {taskAssignmentProjects.map((project) => (
+                          <tr
+                            key={project.id}
+                            className="border-b hover:bg-orange-50 cursor-pointer transition-colors"
+                            onClick={() => router.push(`/projects/${project.id}`)}
+                          >
+                            <td className="p-3 text-sm">{project.orderNo}</td>
+                            <td className="p-3 text-sm font-medium">{project.projectName}</td>
+                            <td className="p-3 text-sm">{project.manager}</td>
+                            <td className="p-3 text-sm">{project.startDate}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 担当者フィルター */}
           <div className="mb-6 flex items-center gap-4">
             <div className="relative" ref={filterRef}>

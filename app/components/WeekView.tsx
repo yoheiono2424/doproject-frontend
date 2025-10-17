@@ -61,17 +61,42 @@ export default function WeekView({
   const weekDays = getWeekDays(weekStartDate);
   const weekDayNames = ['日', '月', '火', '水', '木', '金', '土'];
 
-  // 従業員リストを取得（ログインユーザーを最上部に固定、その後は社員番号順）
+  // 従業員リストを取得（ログインユーザーを最上部に固定、その後は役職優先の社員番号順）
   const getSortedEmployees = () => {
-    // 週表示では常に全従業員を表示
-    const employees = [...mockStaff];
+    // ログインユーザーの部署を取得
+    const currentUserEmployee = mockStaff.find(emp => emp.name === currentUser?.name);
+    const currentUserDepartment = currentUserEmployee?.department;
 
-    // ログインユーザーを特定
-    const currentUserEmployee = employees.find(emp => emp.name === currentUser?.name);
-    const otherEmployees = employees.filter(emp => emp.name !== currentUser?.name);
+    // ログインユーザーの部署メンバーのみを抽出
+    const departmentEmployees = currentUserDepartment
+      ? mockStaff.filter(emp => emp.department === currentUserDepartment)
+      : [...mockStaff];
 
-    // 社員番号順でソート
+    // ログインユーザー以外の従業員
+    const otherEmployees = departmentEmployees.filter(emp => emp.name !== currentUser?.name);
+
+    // 役職の優先順位を定義
+    const jobTitlePriority: { [key: string]: number } = {
+      '役員': 1,
+      '部長': 2,
+      '課長': 3,
+      '課長補佐': 4,
+      '係長': 5,
+      '主任': 6,
+      'メンバー': 7,
+    };
+
+    // 役職優先 + 社員番号順でソート
     otherEmployees.sort((a, b) => {
+      const priorityA = jobTitlePriority[a.jobTitle] || 999;
+      const priorityB = jobTitlePriority[b.jobTitle] || 999;
+
+      // 役職が異なる場合は役職で比較
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // 役職が同じ場合は社員番号順
       const numA = parseInt(a.id.replace('s', ''));
       const numB = parseInt(b.id.replace('s', ''));
       return numA - numB;

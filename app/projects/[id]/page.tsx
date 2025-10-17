@@ -6,11 +6,13 @@ import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
 import { mockProjects, mockTasks } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { canEditProjectDetails } = usePermissions();
   const projectId = params.id as string;
   
   const project = mockProjects.find(p => p.id === projectId);
@@ -116,11 +118,16 @@ export default function ProjectDetailPage() {
             <div className="p-4 border-b bg-gray-50">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold">タスク管理</h3>
-                <Link 
+                <Link
                   href={`/projects/${projectId}/tasks`}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 relative inline-flex items-center"
                 >
                   タスク詳細管理
+                  {project.status === 'タスク割当' && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      !
+                    </span>
+                  )}
                 </Link>
               </div>
             </div>
@@ -140,10 +147,10 @@ export default function ProjectDetailPage() {
                     <div className="space-y-1 ml-4">
                       {phaseTasks.map(task => (
                         <div key={task.id} className="flex items-center gap-2">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={task.completed}
-                            disabled={!isCurrentPhase || task.completed}
+                            disabled={!canEditProjectDetails() || !isCurrentPhase || task.completed}
                             onChange={() => alert('タスクを完了しました')}
                           />
                           <span className={task.completed ? 'line-through text-gray-500' : ''}>
@@ -185,9 +192,11 @@ export default function ProjectDetailPage() {
                   <button className="text-blue-600 hover:underline">ダウンロード</button>
                 </div>
               </div>
-              <button className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                ＋ ファイルアップロード
-              </button>
+              {canEditProjectDetails() && (
+                <button className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                  ＋ ファイルアップロード
+                </button>
+              )}
             </div>
           </div>
         </div>

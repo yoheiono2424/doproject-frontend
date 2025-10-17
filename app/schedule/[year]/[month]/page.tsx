@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import WeekView from '@/app/components/WeekView';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects, mockTasks, mockPersonalEvents } from '@/app/lib/mockData';
+import { mockProjects, mockTasks, mockPersonalEvents, mockStaff } from '@/app/lib/mockData';
 import { CalendarDays, CheckSquare, Calendar as CalendarIcon, List } from 'lucide-react';
 
 export default function CalendarViewPage() {
@@ -15,8 +15,10 @@ export default function CalendarViewPage() {
   const { isAuthenticated, user } = useAuthStore();
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [showAssigneePopup, setShowAssigneePopup] = useState(false);
   const [showProjectPopup, setShowProjectPopup] = useState(false);
+  const [showDepartmentPopup, setShowDepartmentPopup] = useState(false);
   const [projectSearchQuery, setProjectSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'events' | 'tasks'>('all');
   const [showEventModal, setShowEventModal] = useState(false);
@@ -92,14 +94,15 @@ export default function CalendarViewPage() {
       if (!target.closest('.filter-popup')) {
         setShowAssigneePopup(false);
         setShowProjectPopup(false);
+        setShowDepartmentPopup(false);
       }
     };
 
-    if (showAssigneePopup || showProjectPopup) {
+    if (showAssigneePopup || showProjectPopup || showDepartmentPopup) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showAssigneePopup, showProjectPopup]);
+  }, [showAssigneePopup, showProjectPopup, showDepartmentPopup]);
 
   if (!isAuthenticated) {
     return null;
@@ -186,6 +189,14 @@ export default function CalendarViewPage() {
             continue;
           }
 
+          // 部署フィルタリング
+          if (selectedDepartments.length > 0) {
+            const staff = mockStaff.find(s => s.name.includes(task.assignee));
+            if (!staff || !selectedDepartments.includes(staff.department)) {
+              continue;
+            }
+          }
+
           if (task.deadline === targetDateStr) {
             const deadlineDate = new Date(task.deadline);
             deadlineDate.setHours(0, 0, 0, 0);
@@ -267,6 +278,14 @@ export default function CalendarViewPage() {
     // 担当者フィルター適用（選択されている場合のみ）
     if (selectedAssignees.length > 0 && selectedAssignees.length < allAssignees.length) {
       filteredEvents = filteredEvents.filter(event => selectedAssignees.includes(event.userId));
+    }
+
+    // 部署フィルター適用
+    if (selectedDepartments.length > 0) {
+      filteredEvents = filteredEvents.filter(event => {
+        const staff = mockStaff.find(s => s.name.includes(event.userId));
+        return staff && selectedDepartments.includes(staff.department);
+      });
     }
 
     return filteredEvents;
@@ -375,6 +394,13 @@ export default function CalendarViewPage() {
                   setViewMode('week');
                   // 週表示に切り替えたら全員を表示
                   setSelectedAssignees(allAssignees);
+                  // ログインユーザーの部署を部署フィルターに設定
+                  if (user) {
+                    const currentUserStaff = mockStaff.find(s => s.name === user.name);
+                    if (currentUserStaff) {
+                      setSelectedDepartments([currentUserStaff.department]);
+                    }
+                  }
                 }}
                 className={`px-4 py-2 rounded flex items-center gap-2 ${
                   viewMode === 'week'
@@ -475,6 +501,61 @@ export default function CalendarViewPage() {
                             }}
                           />
                           <span>{assignee}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 部署フィルター（すべてのタブで表示） */}
+              <div className="relative filter-popup">
+                <button
+                  onClick={() => setShowDepartmentPopup(!showDepartmentPopup)}
+                  className="border rounded px-3 py-2 text-sm bg-white hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <span className="font-semibold">部署:</span>
+                  <span className="text-gray-600">
+                    {selectedDepartments.length === 0
+                      ? 'すべて'
+                      : selectedDepartments.length === 1
+                        ? selectedDepartments[0]
+                        : '複数選択'}
+                  </span>
+                  <span>▼</span>
+                </button>
+
+                {showDepartmentPopup && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg p-4 z-50 w-64">
+                    <div className="mb-2 pb-2 border-b">
+                      <label className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedDepartments.length === 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDepartments([]);
+                            }
+                          }}
+                        />
+                        <span className="font-semibold">すべて</span>
+                      </label>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1">
+                      {['技術部1課', '技術部2課', '営業部', '総務部', '役員'].map(dept => (
+                        <label key={dept} className="flex items-center gap-2 hover:bg-gray-50 p-1 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedDepartments.includes(dept)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDepartments([...selectedDepartments, dept]);
+                              } else {
+                                setSelectedDepartments(selectedDepartments.filter(d => d !== dept));
+                              }
+                            }}
+                          />
+                          <span>{dept}</span>
                         </label>
                       ))}
                     </div>

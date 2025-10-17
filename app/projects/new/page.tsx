@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
-import { mockPartners } from '@/app/lib/mockData';
+import { mockPartners, mockStaff } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function ProjectRegisterPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { canEditProjectDetails } = usePermissions();
   const [contractType, setContractType] = useState('');
   const [formData, setFormData] = useState({
     orderNo: '',
@@ -25,6 +27,10 @@ export default function ProjectRegisterPage() {
     endDate: '',
     manager: '',
     engineer: '',
+    clientCompanyName: '',
+    clientContactName: '',
+    clientPhone: '',
+    clientEmail: '',
   });
 
   useEffect(() => {
@@ -37,6 +43,31 @@ export default function ProjectRegisterPage() {
     return null;
   }
 
+  // 権限チェック：高権限ユーザー以外はアクセス不可
+  if (!canEditProjectDetails()) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="content-area">
+          <div className="bg-white shadow">
+            <div className="p-4 border-b">
+              <h2 className="text-2xl font-bold">新規案件登録</h2>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="bg-white rounded shadow p-6 text-center">
+              <p className="text-red-600 text-lg font-bold mb-4">アクセス権限がありません</p>
+              <p className="text-gray-600 mb-6">この機能は部長クラス以上、総務部、または個別権限を持つユーザーのみ利用できます。</p>
+              <Link href="/projects" className="text-blue-600 hover:underline">
+                ← 案件一覧に戻る
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const updateTaskCount = (value: string) => {
     setContractType(value);
     setFormData({ ...formData, contractType: value });
@@ -46,14 +77,27 @@ export default function ProjectRegisterPage() {
     e.preventDefault();
 
     // バリデーション
-    if (!formData.orderNo || !formData.contractType || !formData.clientName || !formData.projectName) {
+    if (!formData.orderNo || !formData.contractType || !formData.clientName || !formData.projectName || !formData.manager || !formData.engineer) {
       alert('必須項目を入力してください');
       return;
     }
 
-    // ここで実際の登録処理を行う
-    alert('案件を登録しました');
-    router.push('/projects');
+    // 【v2.26】登録後の自動遷移ロジック
+    const currentUser = useAuthStore.getState().user;
+    const loginUserName = currentUser?.name || '';
+
+    // 仮の新規案件ID（実際のバックエンド実装時は登録APIから返されるIDを使用）
+    const newProjectId = '999';
+
+    // 登録者 = 担当者の場合
+    if (loginUserName === formData.manager) {
+      alert('案件を登録しました。タスク割り当てを行ってください。');
+      router.push(`/projects/${newProjectId}/tasks`);
+    } else {
+      // 登録者 ≠ 担当者の場合
+      alert(`案件を登録しました。担当者（${formData.manager}）にタスク割り当て依頼を送信しました。`);
+      router.push('/projects');
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -126,7 +170,7 @@ export default function ProjectRegisterPage() {
                   </div>
                   <div className="col-span-1">
                     <label className="block text-sm font-medium mb-1">
-                      工事種別 <span className="text-red-600">*</span>
+                      工事カテゴリー <span className="text-red-600">*</span>
                     </label>
                     <select
                       name="workType"
@@ -248,32 +292,96 @@ export default function ProjectRegisterPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">担当者</label>
+                    <label className="block text-sm font-medium mb-1">
+                      担当者 <span className="text-red-600">*</span>
+                    </label>
                     <select
                       name="manager"
                       value={formData.manager}
                       onChange={handleInputChange}
                       className="w-full border rounded px-3 py-2"
+                      required
                     >
                       <option value="">選択してください</option>
-                      <option value="田中">田中</option>
-                      <option value="佐藤">佐藤</option>
-                      <option value="高橋">高橋</option>
-                      <option value="鈴木">鈴木</option>
-                      <option value="山田">山田</option>
-                      <option value="伊藤">伊藤</option>
-                      <option value="山本">山本</option>
+                      {mockStaff.map((staff) => (
+                        <option key={staff.id} value={staff.name}>
+                          {staff.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">主任技術者/代理人</label>
-                    <input
-                      type="text"
+                    <label className="block text-sm font-medium mb-1">
+                      主任技術者/代理人 <span className="text-red-600">*</span>
+                    </label>
+                    <select
                       name="engineer"
                       value={formData.engineer}
                       onChange={handleInputChange}
                       className="w-full border rounded px-3 py-2"
+                      required
+                    >
+                      <option value="">選択してください</option>
+                      {mockStaff.map((staff) => (
+                        <option key={staff.id} value={staff.name}>
+                          {staff.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* クライアント情報 */}
+            <div className="bg-white rounded shadow mb-6">
+              <div className="p-4 border-b bg-gray-50">
+                <h3 className="font-bold">クライアント情報</h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">クライアント会社名</label>
+                    <input
+                      type="text"
+                      name="clientCompanyName"
+                      value={formData.clientCompanyName}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="例: 株式会社○○"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">担当者名</label>
+                    <input
+                      type="text"
+                      name="clientContactName"
+                      value={formData.clientContactName}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
                       placeholder="例: 山田太郎"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">連絡先TEL</label>
+                    <input
+                      type="tel"
+                      name="clientPhone"
+                      value={formData.clientPhone}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="例: 03-1234-5678"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">メール</label>
+                    <input
+                      type="email"
+                      name="clientEmail"
+                      value={formData.clientEmail}
+                      onChange={handleInputChange}
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="例: yamada@example.com"
                     />
                   </div>
                 </div>

@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
+import { mockStaff } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function StaffPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { canAccessEmployeeManagement } = usePermissions();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -20,19 +23,21 @@ export default function StaffPage() {
     return null;
   }
 
-  const employees = [
-    { id: 1, name: '髙峯 一郎', qualification: '1級電気工事施工管理技士', specialty: '電気' },
-    { id: 2, name: '杉田 次郎', qualification: '1級管工事施工管理技士', specialty: '機械' },
-    { id: 3, name: '中村 三郎', qualification: '2級管工事施工管理技士', specialty: '機械' },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
       <div className="content-area">
         <div className="bg-white shadow">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-2xl font-bold">従業員管理</h2>
+            {canAccessEmployeeManagement() && (
+              <Link
+                href="/staff/staff/new"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                ＋ 社員追加
+              </Link>
+            )}
           </div>
         </div>
 
@@ -42,34 +47,40 @@ export default function StaffPage() {
               <h3 className="font-bold">社員マスター</h3>
             </div>
             <div className="p-4">
-              <table className="w-full mb-4">
+              <table className="w-full">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-2 text-left">社員名</th>
-                    <th className="p-2 text-left">資格</th>
-                    <th className="p-2 text-center">専門</th>
+                    <th className="p-2 text-left">社員番号／ID</th>
+                    <th className="p-2 text-left">氏名（漢字）</th>
+                    <th className="p-2 text-left">役職</th>
+                    <th className="p-2 text-left">所属部署</th>
+                    <th className="p-2 text-left">社用携帯番号</th>
+                    <th className="p-2 text-left">社内メールアドレス</th>
                     <th className="p-2 text-center">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((emp) => (
+                  {mockStaff.map((emp) => (
                     <tr key={emp.id} className="border-b">
+                      <td className="p-2">{emp.employeeId}</td>
                       <td className="p-2">{emp.name}</td>
-                      <td className="p-2">{emp.qualification}</td>
-                      <td className="p-2 text-center">{emp.specialty}</td>
+                      <td className="p-2">{emp.jobTitle}</td>
+                      <td className="p-2">{emp.department}</td>
+                      <td className="p-2">{emp.companyPhone}</td>
+                      <td className="p-2">{emp.companyEmail}</td>
                       <td className="p-2 text-center">
-                        <button className="text-blue-600 hover:underline">編集</button>
+                        {canAccessEmployeeManagement() ? (
+                          <Link href={`/staff/${emp.id}`} className="text-blue-600 hover:underline">
+                            詳細
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <Link
-                href="/staff/staff/new"
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 inline-block"
-              >
-                ＋ 社員追加
-              </Link>
             </div>
           </div>
         </div>

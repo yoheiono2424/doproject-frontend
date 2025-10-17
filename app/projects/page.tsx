@@ -6,10 +6,12 @@ import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
 import { mockProjects } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function ProjectsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { canEditProjectDetails } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -25,20 +27,30 @@ export default function ProjectsPage() {
     return null;
   }
 
-  const filteredProjects = mockProjects.filter(project => {
-    const matchesSearch = searchTerm === '' || 
-      project.projectName.includes(searchTerm) ||
-      project.clientName.includes(searchTerm) ||
-      project.orderNo.includes(searchTerm);
-    
-    const matchesType = filterType === 'all' || project.type === filterType;
-    const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
-    const matchesContract = filterContract === 'all' || 
-      (filterContract === '元請' && project.contractType === '元') ||
-      (filterContract === '下請' && project.contractType === '下');
-    
-    return matchesSearch && matchesType && matchesStatus && matchesContract;
-  });
+  const filteredProjects = mockProjects
+    .filter(project => {
+      const matchesSearch = searchTerm === '' ||
+        project.projectName.includes(searchTerm) ||
+        project.clientName.includes(searchTerm) ||
+        project.orderNo.includes(searchTerm);
+
+      const matchesType = filterType === 'all' || project.type === filterType;
+      const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
+      const matchesContract = filterContract === 'all' ||
+        (filterContract === '元請' && project.contractType === '元') ||
+        (filterContract === '下請' && project.contractType === '下');
+
+      return matchesSearch && matchesType && matchesStatus && matchesContract;
+    })
+    // 【v2.26】ステータスによる並び順制御：タスク割当 → 進行中 → 完了済み
+    .sort((a, b) => {
+      const getPriority = (status: string) => {
+        if (status === 'タスク割当') return 1;
+        if (status === '完了') return 3;
+        return 2; // 施工中、契約済、未着手など
+      };
+      return getPriority(a.status) - getPriority(b.status);
+    });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -47,12 +59,14 @@ export default function ProjectsPage() {
         <div className="bg-white shadow">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-2xl font-bold">案件一覧</h2>
-            <Link
-              href="/projects/new"
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              ＋ 新規案件登録
-            </Link>
+            {canEditProjectDetails() && (
+              <Link
+                href="/projects/new"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                ＋ 新規案件登録
+              </Link>
+            )}
           </div>
         </div>
         
@@ -148,9 +162,10 @@ export default function ProjectsPage() {
                     <td className="p-2 text-center">{project.progress}%</td>
                     <td className="p-2 text-center">
                       <span className={`status-badge ${
+                        project.status === 'タスク割当' ? 'bg-orange-100 text-orange-700' :
                         project.status === '施工中' ? 'bg-blue-100 text-blue-700' :
                         project.status === '契約済' ? 'bg-green-100 text-green-700' :
-                        'bg-orange-100 text-orange-700'
+                        'bg-gray-100 text-gray-700'
                       }`}>
                         {project.status}
                       </span>

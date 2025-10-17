@@ -16,6 +16,7 @@ export default function SchedulePage() {
   const [managerFilter, setManagerFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [contractFilter, setContractFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [workTypeTab, setWorkTypeTab] = useState<string>('工事');
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedYear, setSelectedYear] = useState<number>(0);
@@ -44,6 +45,15 @@ export default function SchedulePage() {
 
     // 工事種別でフィルタリング（タブ）
     filtered = filtered.filter(p => (p as any).workType === workTypeTab);
+
+    // 案件名検索でフィルタリング
+    if (searchTerm !== '') {
+      filtered = filtered.filter(p =>
+        p.projectName.includes(searchTerm) ||
+        p.clientName.includes(searchTerm) ||
+        p.orderNo.includes(searchTerm)
+      );
+    }
 
     // 担当者でフィルタリング
     if (managerFilter !== 'all') {
@@ -333,7 +343,14 @@ export default function SchedulePage() {
                   <option value="下">下請</option>
                 </select>
               </div>
-              <div className="ml-auto text-sm text-gray-600">
+              <input
+                type="text"
+                placeholder="案件名・客先名・受注Noで検索..."
+                className="border rounded px-3 py-1 text-sm flex-1"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <div className="text-sm text-gray-600 whitespace-nowrap">
                 表示中: {filteredProjects.length}件 / 全{mockProjects.length}件
               </div>
             </div>
@@ -346,7 +363,6 @@ export default function SchedulePage() {
               <thead>
                 <tr>
                   <th rowSpan={2} style={{ width: '80px' }}>担当者</th>
-                  <th rowSpan={2} style={{ width: '60px' }}>番号</th>
                   <th rowSpan={2} style={{ width: '80px' }}>受注No</th>
                   <th rowSpan={2} style={{ width: '50px' }}>種別</th>
                   <th rowSpan={2} style={{ width: '150px' }}>客先名<br/>現場名</th>
@@ -424,7 +440,6 @@ export default function SchedulePage() {
                     title="クリックで案件詳細を表示"
                   >
                     <td>{project.manager}</td>
-                    <td>{index + 1}</td>
                     <td>{project.orderNo}</td>
                     <td>
                       <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
