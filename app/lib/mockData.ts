@@ -19,7 +19,7 @@ export const mockProjects = [
     progress: 35,
     status: '施工中',
     currentPhase: '施工フェーズ',
-    partnerId: '1', // 株式会社山本工業
+    partnerIds: ['1', '2'], // 株式会社山本工業 + 有限会社田中電設
   },
   {
     id: '2',
@@ -60,7 +60,7 @@ export const mockProjects = [
     progress: 45,
     status: '施工中',
     currentPhase: '施工フェーズ',
-    partnerId: '3', // 佐藤建設株式会社
+    partnerIds: ['1', '2', '3'], // 株式会社山本工業 + 有限会社田中電設 + 鈴木建設株式会社
   },
   {
     id: '4',
@@ -100,7 +100,7 @@ export const mockProjects = [
     amount: 38000000,
     progress: 25,
     status: '施工中',
-    partnerId: '2', // 田中電気工業株式会社
+    partnerIds: ['2', '3'], // 有限会社田中電設 + 鈴木建設株式会社
     currentPhase: '着工準備フェーズ',
   },
   {
@@ -202,6 +202,7 @@ export const mockProjects = [
     progress: 90,
     status: '施工中',
     currentPhase: '竣工フェーズ',
+    partnerIds: ['1', '3'], // 株式会社山本工業 + 鈴木建設株式会社
   },
   {
     id: '11',
@@ -302,6 +303,7 @@ export const mockProjects = [
     progress: 55,
     status: '施工中',
     currentPhase: '施工フェーズ',
+    partnerIds: ['2', '1'], // 有限会社田中電設 + 株式会社山本工業
   },
   {
     id: '16',
@@ -403,6 +405,7 @@ export const mockProjects = [
     progress: 100,
     status: '完了',
     currentPhase: '点検',
+    partnerIds: ['3', '2', '1'], // 鈴木建設株式会社 + 有限会社田中電設 + 株式会社山本工業
   },
   {
     id: '21',
@@ -645,7 +648,7 @@ export const mockProjects = [
     progress: 0,
     status: 'タスク割当',
     currentPhase: '契約フェーズ',
-    partnerId: '1',
+    partnerIds: ['1'],
   },
   {
     id: '33',
@@ -666,183 +669,91 @@ export const mockProjects = [
     progress: 0,
     status: 'タスク割当',
     currentPhase: '契約フェーズ',
-    partnerId: '2',
+    partnerIds: ['2'],
   },
 ];
 
+// タスクモックデータ（2025年11月5日基準）
 export const mockTasks = {
   '1': {
     契約フェーズ: [
-      { id: 't1', name: '契約書締結', completed: false, deadline: '2025-09-05', assignee: '田中' },
-      { id: 't2', name: 'CORINS登録要否確認', completed: false, deadline: '2025-09-06', assignee: '田中' },
-      { id: 't3', name: '現場代理人選任通知', completed: false, deadline: '2025-09-07', assignee: '田中' },
-      { id: 't4', name: '主任技術者選任通知', completed: false, deadline: '2025-09-07', assignee: '田中' },
-      { id: 't5', name: 'CORINS登録（契約）', completed: false, deadline: '2025-09-08', assignee: '田中' },
+      { id: 't1', name: '契約書締結', completed: false, deadline: '2025-11-02', assignee: '田中' },
+      { id: 't2', name: 'CORINS登録要否確認', completed: false, deadline: '2025-11-05', assignee: '田中' },
+      { id: 't3', name: '現場代理人選任通知', completed: false, deadline: '2025-11-07', assignee: '田中' },
     ],
     着工準備フェーズ: [
-      { id: 't6', name: '工程表提出', completed: false, deadline: '2025-09-10', assignee: '田中' },
-      { id: 't7', name: '施工計画書作成', completed: false, deadline: '2025-09-15', assignee: '山田太郎' },
-      { id: 't8', name: '施工体制台帳作成', completed: false, deadline: '2025-09-20', assignee: '田中' },
-      { id: 't9', name: '設計図書照査', completed: false, deadline: '2025-09-18', assignee: '山田太郎' },
+      { id: 't4', name: '工程表提出', completed: false, deadline: '2025-11-10', assignee: '田中' },
+      { id: 't5', name: '施工計画書作成', completed: false, deadline: '2025-11-15', assignee: '山田太郎' },
+      { id: 't6', name: '設計図書照査', completed: false, deadline: '2025-11-18', assignee: '山田太郎' },
     ],
     施工フェーズ: [
-      { id: 't10', name: '施工状況報告書', completed: false, deadline: '2025-09-30', assignee: '田中' },
-      { id: 't11', name: '工程会議', completed: false, deadline: '2025-09-25', assignee: '山田太郎' },
-      { id: 't12', name: '工事写真撮影', completed: false, deadline: '2025-09-28', assignee: '山田太郎' },
-      { id: 't13', name: '施工状況報告書', completed: false, deadline: '2025-10-31', assignee: '田中' },
-      { id: 't14', name: '工程会議', completed: false, deadline: '2025-10-15', assignee: '山田太郎' },
-      { id: 't15', name: '工事写真撮影', completed: false, deadline: '2025-10-20', assignee: '山田太郎' },
-      { id: 't16', name: '中間検査準備', completed: false, deadline: '2025-10-10', assignee: '田中' },
-      { id: 't17', name: '安全管理報告', completed: false, deadline: '2025-10-06', assignee: '山田太郎' },
+      { id: 't7', name: '施工状況報告書', completed: false, deadline: '2025-11-25', assignee: '田中' },
+      { id: 't8', name: '工程会議', completed: false, deadline: '2025-11-20', assignee: '山田太郎' },
+      { id: 't9', name: '工事写真撮影', completed: false, deadline: '2025-11-28', assignee: '山田太郎' },
     ],
   },
   '2': {
     契約フェーズ: [
-      { id: 't21', name: '契約書締結', completed: false, deadline: '2025-09-10', assignee: '佐藤' },
-      { id: 't22', name: '現場代理人選任通知', completed: false, deadline: '2025-09-12', assignee: '佐藤' },
-      { id: 't23', name: '主任技術者選任通知', completed: false, deadline: '2025-09-12', assignee: '鈴木一郎' },
+      { id: 't21', name: '契約書締結', completed: false, deadline: '2025-11-01', assignee: '佐藤' },
+      { id: 't22', name: '現場代理人選任通知', completed: false, deadline: '2025-11-03', assignee: '佐藤' },
     ],
     着工準備フェーズ: [
-      { id: 't24', name: '工程表提出', completed: false, deadline: '2025-10-05', assignee: '佐藤' },
-      { id: 't25', name: '施工計画書作成', completed: false, deadline: '2025-10-08', assignee: '鈴木一郎' },
-      { id: 't26', name: '施工体制台帳作成', completed: false, deadline: '2025-10-12', assignee: '佐藤' },
+      { id: 't23', name: '工程表提出', completed: false, deadline: '2025-11-05', assignee: '佐藤' },
+      { id: 't24', name: '施工計画書作成', completed: false, deadline: '2025-11-08', assignee: '鈴木一郎' },
+      { id: 't25', name: '施工体制台帳作成', completed: false, deadline: '2025-11-12', assignee: '佐藤' },
     ],
   },
   '3': {
     施工フェーズ: [
-      { id: 't31', name: '施工状況報告書', completed: false, deadline: '2025-09-15', assignee: '高橋' },
-      { id: 't32', name: '工程会議', completed: false, deadline: '2025-09-20', assignee: '伊藤次郎' },
-      { id: 't33', name: '工事写真撮影', completed: false, deadline: '2025-09-22', assignee: '伊藤次郎' },
-      { id: 't34', name: '施工状況報告書', completed: false, deadline: '2025-10-25', assignee: '高橋' },
-      { id: 't35', name: '工程会議', completed: false, deadline: '2025-10-18', assignee: '伊藤次郎' },
-      { id: 't36', name: '安全パトロール', completed: false, deadline: '2025-10-07', assignee: '高橋' },
+      { id: 't31', name: '施工状況報告書', completed: false, deadline: '2025-11-04', assignee: '高橋' },
+      { id: 't32', name: '工程会議', completed: false, deadline: '2025-11-06', assignee: '伊藤次郎' },
+      { id: 't33', name: '工事写真撮影', completed: false, deadline: '2025-11-09', assignee: '伊藤次郎' },
+      { id: 't34', name: '安全パトロール', completed: false, deadline: '2025-11-14', assignee: '高橋' },
     ],
   },
   '4': {
     施工フェーズ: [
-      { id: 't41', name: '工事写真撮影', completed: false, deadline: '2025-09-08', assignee: '髙峯一郎' },
-      { id: 't42', name: '施工状況報告書', completed: false, deadline: '2025-09-10', assignee: '鈴木' },
-      { id: 't43', name: '最終確認', completed: false, deadline: '2025-10-28', assignee: '髙峯一郎' },
-      { id: 't44', name: '竣工検査', completed: false, deadline: '2025-10-30', assignee: '鈴木' },
+      { id: 't41', name: '工事写真撮影', completed: false, deadline: '2025-11-05', assignee: '髙峯一郎' },
+      { id: 't42', name: '施工状況報告書', completed: false, deadline: '2025-11-11', assignee: '鈴木' },
+      { id: 't43', name: '最終確認', completed: false, deadline: '2025-11-28', assignee: '髙峯一郎' },
     ],
   },
   '5': {
     着工準備フェーズ: [
-      { id: 't51', name: '工程表提出', completed: false, deadline: '2025-09-14', assignee: '高橋' },
-      { id: 't52', name: '施工計画書作成', completed: false, deadline: '2025-09-16', assignee: '杉田次郎' },
+      { id: 't51', name: '工程表提出', completed: false, deadline: '2025-11-05', assignee: '高橋' },
+      { id: 't52', name: '施工計画書作成', completed: false, deadline: '2025-11-16', assignee: '杉田次郎' },
     ],
   },
   '6': {
     契約フェーズ: [
-      { id: 't61', name: '契約書締結', completed: false, deadline: '2025-09-18', assignee: '田中' },
-      { id: 't62', name: 'CORINS登録要否確認', completed: false, deadline: '2025-09-19', assignee: '髙峯一郎' },
+      { id: 't61', name: '契約書締結', completed: false, deadline: '2025-11-03', assignee: '田中' },
+      { id: 't62', name: 'CORINS登録要否確認', completed: false, deadline: '2025-11-08', assignee: '髙峯一郎' },
     ],
   },
   '7': {
     施工フェーズ: [
-      { id: 't71', name: '工程会議', completed: false, deadline: '2025-09-13', assignee: '中村三郎' },
-      { id: 't72', name: '工事写真撮影', completed: false, deadline: '2025-09-17', assignee: '中村三郎' },
+      { id: 't71', name: '工程会議', completed: false, deadline: '2025-11-13', assignee: '中村三郎' },
+      { id: 't72', name: '工事写真撮影', completed: false, deadline: '2025-11-17', assignee: '中村三郎' },
     ],
   },
   '8': {
     契約フェーズ: [
-      { id: 't81', name: '契約書締結', completed: false, deadline: '2025-09-20', assignee: '佐藤' },
-      { id: 't82', name: 'CORINS登録（契約）', completed: false, deadline: '2025-09-22', assignee: '髙峯一郎' },
+      { id: 't81', name: '契約書締結', completed: false, deadline: '2025-11-04', assignee: '佐藤' },
+      { id: 't82', name: 'CORINS登録（契約）', completed: false, deadline: '2025-11-10', assignee: '髙峯一郎' },
     ],
   },
   '9': {
     着工準備フェーズ: [
-      { id: 't91', name: '工程表提出', completed: false, deadline: '2025-09-24', assignee: '鈴木' },
-      { id: 't92', name: '施工計画書作成', completed: false, deadline: '2025-09-26', assignee: '杉田次郎' },
+      { id: 't91', name: '工程表提出', completed: false, deadline: '2025-11-22', assignee: '鈴木' },
+      { id: 't92', name: '施工計画書作成', completed: false, deadline: '2025-11-26', assignee: '杉田次郎' },
     ],
   },
   '10': {
     竣工フェーズ: [
-      { id: 't101', name: '完成図書作成', completed: false, deadline: '2025-09-15', assignee: '高橋' },
-      { id: 't102', name: '工事写真整理', completed: false, deadline: '2025-09-17', assignee: '山田太郎' },
-      { id: 't103', name: '竣工検査申請', completed: false, deadline: '2025-09-19', assignee: '高橋' },
-      { id: 't104', name: '竣工検査立会', completed: false, deadline: '2025-09-20', assignee: '山田太郎' },
-      { id: 't105', name: '最終報告書作成', completed: false, deadline: '2025-10-18', assignee: '山田太郎' },
-    ],
-  },
-  '11': {
-    施工フェーズ: [
-      { id: 't111', name: '機器据付開始', completed: false, deadline: '2025-09-13', assignee: '中村三郎' },
-      { id: 't112', name: '配管接続作業', completed: false, deadline: '2025-09-18', assignee: '中村三郎' },
-      { id: 't113', name: '中間検査', completed: false, deadline: '2025-09-25', assignee: '田中' },
-      { id: 't114', name: '試運転調整', completed: false, deadline: '2025-09-30', assignee: '中村三郎' },
-    ],
-  },
-  '12': {
-    施工フェーズ: [
-      { id: 't121', name: '既設機器撤去', completed: false, deadline: '2025-09-07', assignee: '髙峯一郎' },
-      { id: 't122', name: '新設機器搬入', completed: false, deadline: '2025-09-10', assignee: '髙峯一郎' },
-      { id: 't123', name: '配線工事', completed: false, deadline: '2025-09-15', assignee: '髙峯一郎' },
-      { id: 't124', name: '動作確認', completed: false, deadline: '2025-09-20', assignee: '山田' },
-    ],
-  },
-  '13': {
-    契約フェーズ: [
-      { id: 't131', name: '契約書締結', completed: false, deadline: '2025-09-25', assignee: '佐藤' },
-      { id: 't132', name: 'CORINS登録要否確認', completed: false, deadline: '2025-09-26', assignee: '佐藤' },
-      { id: 't133', name: '現場代理人選任通知', completed: false, deadline: '2025-09-27', assignee: '杉田次郎' },
-      { id: 't134', name: '主任技術者選任通知', completed: false, deadline: '2025-09-27', assignee: '杉田次郎' },
-      { id: 't135', name: 'CORINS登録（契約）', completed: false, deadline: '2025-09-28', assignee: '佐藤' },
-    ],
-  },
-  '14': {
-    着工準備フェーズ: [
-      { id: 't141', name: '現場調査', completed: false, deadline: '2025-09-16', assignee: '山田太郎' },
-      { id: 't142', name: '設計図書照査', completed: false, deadline: '2025-09-18', assignee: '山田太郎' },
-      { id: 't143', name: '工程表作成', completed: false, deadline: '2025-09-20', assignee: '鈴木' },
-      { id: 't144', name: '施工計画書作成', completed: false, deadline: '2025-09-22', assignee: '鈴木' },
-      { id: 't145', name: '資材発注', completed: false, deadline: '2025-10-05', assignee: '山田太郎' },
-      { id: 't146', name: '協力会社選定', completed: false, deadline: '2025-10-12', assignee: '山田太郎' },
-    ],
-  },
-  '15': {
-    施工フェーズ: [
-      { id: 't151', name: '既設冷却塔解体', completed: false, deadline: '2025-09-09', assignee: '中村三郎' },
-      { id: 't152', name: '基礎補強工事', completed: false, deadline: '2025-09-12', assignee: '中村三郎' },
-      { id: 't153', name: '新設冷却塔据付', completed: false, deadline: '2025-09-16', assignee: '中村三郎' },
-      { id: 't154', name: '配管接続・試運転', completed: false, deadline: '2025-09-20', assignee: '高橋' },
-      { id: 't155', name: '完了検査', completed: false, deadline: '2025-09-24', assignee: '高橋' },
-    ],
-  },
-  '16': {
-    着工準備フェーズ: [
-      { id: 't161', name: '施工計画書作成', completed: false, deadline: '2025-10-08', assignee: '山田太郎' },
-      { id: 't162', name: '安全管理計画書', completed: false, deadline: '2025-10-14', assignee: '山田太郎' },
-      { id: 't163', name: '工程表提出', completed: false, deadline: '2025-10-20', assignee: '田中' },
-      { id: 't164', name: '資材発注計画', completed: false, deadline: '2025-10-25', assignee: '山田太郎' },
-    ],
-  },
-  '32': {
-    契約フェーズ: [
-      { id: 't321', name: '契約書締結', completed: false, deadline: '', assignee: '' },
-      { id: 't322', name: 'CORINS登録要否確認', completed: false, deadline: '', assignee: '' },
-      { id: 't323', name: '現場代理人選任通知', completed: false, deadline: '', assignee: '' },
-      { id: 't324', name: '主任技術者選任通知', completed: false, deadline: '', assignee: '' },
-      { id: 't325', name: 'CORINS登録（契約）', completed: false, deadline: '', assignee: '' },
-    ],
-    着工準備フェーズ: [
-      { id: 't326', name: '工程表提出', completed: false, deadline: '', assignee: '' },
-      { id: 't327', name: '施工計画書作成', completed: false, deadline: '', assignee: '' },
-      { id: 't328', name: '施工体制台帳作成', completed: false, deadline: '', assignee: '' },
-      { id: 't329', name: '設計図書照査', completed: false, deadline: '', assignee: '' },
-    ],
-    施工フェーズ: [
-      { id: 't330', name: '施工状況報告書', completed: false, deadline: '', assignee: '' },
-      { id: 't331', name: '工程会議', completed: false, deadline: '', assignee: '' },
-      { id: 't332', name: '工事写真撮影', completed: false, deadline: '', assignee: '' },
-    ],
-    竣工フェーズ: [
-      { id: 't333', name: '完成図書作成', completed: false, deadline: '', assignee: '' },
-      { id: 't334', name: '工事写真整理', completed: false, deadline: '', assignee: '' },
-      { id: 't335', name: '竣工検査申請', completed: false, deadline: '', assignee: '' },
-      { id: 't336', name: '竣工検査立会', completed: false, deadline: '', assignee: '' },
-      { id: 't337', name: 'CORINS登録（竣工）', completed: false, deadline: '', assignee: '' },
-      { id: 't338', name: '最終報告書作成', completed: false, deadline: '', assignee: '' },
+      { id: 't101', name: '完成図書作成', completed: false, deadline: '2025-11-01', assignee: '高橋' },
+      { id: 't102', name: '工事写真整理', completed: false, deadline: '2025-11-06', assignee: '山田太郎' },
+      { id: 't103', name: '竣工検査申請', completed: false, deadline: '2025-11-19', assignee: '高橋' },
+      { id: 't104', name: '最終報告書作成', completed: false, deadline: '2025-11-30', assignee: '山田太郎' },
     ],
   },
 };
@@ -859,7 +770,40 @@ export const mockStaff = [
     qualification: '1級電気工事施工管理技士',
     specialty: '電気',
     availability: 100,
-    hasAdminPermission: true
+    hasAdminPermission: true,
+    driverLicenseExpiry: '2025-12-05', // 1ヶ月前アラート表示対象
+    qualifications: [
+      {
+        id: 'q1-1',
+        category1: '免許',
+        category2: '施工管理技士（１級）',
+        qualificationName: '１級電気工事施工管理技士',
+        qualificationDetail: '',
+        acquisitionDate: '2018-06-15',
+        expiryDate: '2025-12-10', // 1ヶ月前アラート表示対象
+        customName: ''
+      },
+      {
+        id: 'q1-2',
+        category1: '免許',
+        category2: '電気工事士',
+        qualificationName: '第一種電気工事士免状',
+        qualificationDetail: '',
+        acquisitionDate: '2015-03-20',
+        expiryDate: '2026-03-20',
+        customName: ''
+      },
+      {
+        id: 'q1-3',
+        category1: '技能講習',
+        category2: '作業主任者',
+        qualificationName: '足場の組立て等作業主任者',
+        qualificationDetail: '',
+        acquisitionDate: '2017-09-10',
+        expiryDate: '',
+        customName: ''
+      }
+    ]
   },
   {
     id: 's2',
@@ -872,7 +816,30 @@ export const mockStaff = [
     qualification: '1級管工事施工管理技士',
     specialty: '機械',
     availability: 80,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2025-12-15', // 1ヶ月前アラート表示対象
+    qualifications: [
+      {
+        id: 'q2-1',
+        category1: '免許',
+        category2: '施工管理技士（１級）',
+        qualificationName: '１級管工事施工管理技士',
+        qualificationDetail: '',
+        acquisitionDate: '2019-07-20',
+        expiryDate: '2025-12-18', // 1ヶ月前アラート表示対象
+        customName: ''
+      },
+      {
+        id: 'q2-2',
+        category1: '労働安全衛生',
+        category2: '職長・安全衛生',
+        qualificationName: '職長・安全衛生責任者教育修了証',
+        qualificationDetail: '',
+        acquisitionDate: '2016-05-15',
+        expiryDate: '',
+        customName: ''
+      }
+    ]
   },
   {
     id: 's3',
@@ -885,7 +852,9 @@ export const mockStaff = [
     qualification: '1級土木施工管理技士',
     specialty: '機械',
     availability: 60,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2026-03-20', // アラート対象外
+    qualifications: []
   },
   {
     id: 's4',
@@ -898,7 +867,9 @@ export const mockStaff = [
     qualification: '2級電気工事施工管理技士',
     specialty: '電気',
     availability: 100,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2026-06-10', // アラート対象外
+    qualifications: []
   },
   {
     id: 's5',
@@ -911,7 +882,9 @@ export const mockStaff = [
     qualification: '1級管工事施工管理技士',
     specialty: '機械',
     availability: 40,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2027-01-15', // アラート対象外
+    qualifications: []
   },
   {
     id: 's6',
@@ -924,7 +897,9 @@ export const mockStaff = [
     qualification: '1級電気工事施工管理技士',
     specialty: '電気',
     availability: 90,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2026-09-30', // アラート対象外
+    qualifications: []
   },
   {
     id: 's7',
@@ -937,7 +912,9 @@ export const mockStaff = [
     qualification: '2級管工事施工管理技士',
     specialty: '機械',
     availability: 100,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2026-04-25', // アラート対象外
+    qualifications: []
   },
   {
     id: 's8',
@@ -950,7 +927,9 @@ export const mockStaff = [
     qualification: '1級管工事施工管理技士',
     specialty: '機械',
     availability: 70,
-    hasAdminPermission: false
+    hasAdminPermission: false,
+    driverLicenseExpiry: '2026-11-05', // アラート対象外
+    qualifications: []
   },
 ];
 
@@ -961,50 +940,37 @@ export const urgentTasks = [
 ];
 
 // 個人予定のモックデータ
+// 個人予定モックデータ（2025年11月5日基準）
 export const mockPersonalEvents = [
-  // 9月の予定
-  { id: 'e1', title: '安全衛生会議', date: '2025-09-05', startTime: '10:00', endTime: '11:30', userId: '田中' },
-  { id: 'e2', title: '協力会社打ち合わせ', date: '2025-09-10', startTime: '14:00', endTime: '16:00', userId: '田中' },
-  { id: 'e3', title: '現場視察', date: '2025-09-15', startTime: '09:00', endTime: '12:00', userId: '山田太郎' },
-  { id: 'e4', title: '技術研修会', date: '2025-09-20', startTime: '13:00', endTime: '17:00', userId: '佐藤' },
-  { id: 'e5', title: '定期健康診断', date: '2025-09-25', startTime: '09:00', endTime: '11:00', userId: '高橋' },
-  { id: 'e24', title: '月初報告会', date: '2025-09-02', startTime: '09:00', endTime: '10:00', userId: '山田太郎' },
-  { id: 'e25', title: '工程打ち合わせ', date: '2025-09-08', startTime: '13:00', endTime: '15:00', userId: '山田太郎' },
-  { id: 'e26', title: '資材検収立会', date: '2025-09-12', startTime: '10:00', endTime: '11:30', userId: '山田太郎' },
-  { id: 'e27', title: '品質検査', date: '2025-09-22', startTime: '14:00', endTime: '16:00', userId: '山田太郎' },
-  { id: 'e28', title: '安全衛生講習', date: '2025-09-27', startTime: '09:30', endTime: '12:00', userId: '山田太郎' },
-
-  // 10月の予定
-  { id: 'e6', title: '月次報告会議', date: '2025-10-01', startTime: '10:00', endTime: '12:00', userId: '田中' },
-  { id: 'e7', title: '安全パトロール', date: '2025-10-03', startTime: '09:00', endTime: '11:00', userId: '高橋' },
-  { id: 'e8', title: '協力会社安全大会', date: '2025-10-05', startTime: '13:30', endTime: '16:30', userId: '佐藤' },
-  { id: 'e9', title: '設計打ち合わせ', date: '2025-10-08', startTime: '14:00', endTime: '16:00', userId: '山田太郎' },
-  { id: 'e10', title: '現場立会検査', date: '2025-10-10', startTime: '10:00', endTime: '15:00', userId: '伊藤次郎' },
-  { id: 'e11', title: '資材発注会議', date: '2025-10-12', startTime: '10:30', endTime: '12:00', userId: '鈴木' },
-  { id: 'e12', title: '品質管理会議', date: '2025-10-15', startTime: '13:00', endTime: '15:00', userId: '田中' },
-  { id: 'e13', title: '施工計画検討会', date: '2025-10-18', startTime: '09:30', endTime: '11:30', userId: '山田太郎' },
-  { id: 'e14', title: '安全教育', date: '2025-10-20', startTime: '14:00', endTime: '16:00', userId: '高橋' },
-  { id: 'e15', title: '工程会議', date: '2025-10-22', startTime: '10:00', endTime: '12:00', userId: '佐藤' },
-  { id: 'e16', title: '定例会議', date: '2025-10-25', startTime: '15:00', endTime: '17:00', userId: '鈴木' },
-  { id: 'e17', title: 'ISO監査', date: '2025-10-28', startTime: '09:00', endTime: '12:00', userId: '田中' },
-  { id: 'e18', title: '月末締め作業', date: '2025-10-31', startTime: '13:00', endTime: '18:00', userId: '佐藤' },
-  { id: 'e19', title: '技術勉強会', date: '2025-10-04', startTime: '16:00', endTime: '18:00', userId: '山田太郎' },
-  { id: 'e20', title: '現場安全パトロール', date: '2025-10-11', startTime: '09:00', endTime: '12:00', userId: '山田太郎' },
-  { id: 'e21', title: '発注者打ち合わせ', date: '2025-10-17', startTime: '13:30', endTime: '15:30', userId: '山田太郎' },
-  { id: 'e22', title: '工事進捗確認', date: '2025-10-24', startTime: '10:00', endTime: '12:00', userId: '山田太郎' },
-  { id: 'e23', title: '竣工検査準備', date: '2025-10-29', startTime: '14:00', endTime: '17:00', userId: '山田太郎' },
-
-  // 山田太郎さんの10月の予定を追加
-  { id: 'e29', title: '月初会議', date: '2025-10-01', startTime: '09:00', endTime: '10:30', userId: '山田太郎' },
-  { id: 'e30', title: '工事写真整理', date: '2025-10-02', startTime: '13:00', endTime: '15:00', userId: '山田太郎' },
-  { id: 'e31', title: '安全衛生委員会', date: '2025-10-07', startTime: '14:00', endTime: '16:00', userId: '山田太郎' },
-  { id: 'e32', title: '協力会社定例会', date: '2025-10-09', startTime: '10:00', endTime: '12:00', userId: '山田太郎' },
-  { id: 'e33', title: '施工図確認', date: '2025-10-14', startTime: '09:30', endTime: '11:00', userId: '山田太郎' },
-  { id: 'e34', title: '資材納品立会', date: '2025-10-16', startTime: '13:00', endTime: '14:30', userId: '山田太郎' },
-  { id: 'e35', title: '中間検査', date: '2025-10-21', startTime: '10:00', endTime: '15:00', userId: '山田太郎' },
-  { id: 'e36', title: '工程調整会議', date: '2025-10-23', startTime: '14:00', endTime: '16:00', userId: '山田太郎' },
-  { id: 'e37', title: '品質管理報告', date: '2025-10-26', startTime: '09:00', endTime: '10:30', userId: '山田太郎' },
-  { id: 'e38', title: '次月計画立案', date: '2025-10-30', startTime: '13:00', endTime: '15:00', userId: '山田太郎' },
+  // 11月の予定
+  { id: 'e1', title: '月初報告会', date: '2025-11-01', startTime: '09:00', endTime: '10:00', userId: '山田太郎' },
+  { id: 'e2', title: '安全衛生会議', date: '2025-11-02', startTime: '10:00', endTime: '11:30', userId: '田中' },
+  { id: 'e3', title: '協力会社打ち合わせ', date: '2025-11-03', startTime: '14:00', endTime: '16:00', userId: '田中' },
+  { id: 'e4', title: '現場視察', date: '2025-11-04', startTime: '09:00', endTime: '12:00', userId: '山田太郎' },
+  { id: 'e5', title: '安全パトロール', date: '2025-11-05', startTime: '09:00', endTime: '11:00', userId: '高橋' },
+  { id: 'e6', title: '工程会議', date: '2025-11-05', startTime: '14:00', endTime: '16:00', userId: '山田太郎' },
+  { id: 'e7', title: '設計打ち合わせ', date: '2025-11-06', startTime: '10:00', endTime: '12:00', userId: '山田太郎' },
+  { id: 'e8', title: '資材検収立会', date: '2025-11-07', startTime: '13:00', endTime: '15:00', userId: '山田太郎' },
+  { id: 'e9', title: '協力会社定例会', date: '2025-11-08', startTime: '10:00', endTime: '12:00', userId: '佐藤' },
+  { id: 'e10', title: '品質検査', date: '2025-11-10', startTime: '09:00', endTime: '11:00', userId: '山田太郎' },
+  { id: 'e11', title: '現場立会検査', date: '2025-11-11', startTime: '10:00', endTime: '15:00', userId: '伊藤次郎' },
+  { id: 'e12', title: '安全衛生講習', date: '2025-11-12', startTime: '13:00', endTime: '17:00', userId: '山田太郎' },
+  { id: 'e13', title: '技術研修会', date: '2025-11-13', startTime: '09:00', endTime: '12:00', userId: '佐藤' },
+  { id: 'e14', title: '施工図確認', date: '2025-11-14', startTime: '14:00', endTime: '16:00', userId: '山田太郎' },
+  { id: 'e15', title: '品質管理会議', date: '2025-11-15', startTime: '10:00', endTime: '12:00', userId: '田中' },
+  { id: 'e16', title: '資材納品立会', date: '2025-11-17', startTime: '13:00', endTime: '14:30', userId: '山田太郎' },
+  { id: 'e17', title: '施工計画検討会', date: '2025-11-18', startTime: '09:30', endTime: '11:30', userId: '山田太郎' },
+  { id: 'e18', title: '中間検査', date: '2025-11-19', startTime: '10:00', endTime: '15:00', userId: '山田太郎' },
+  { id: 'e19', title: '安全教育', date: '2025-11-20', startTime: '14:00', endTime: '16:00', userId: '高橋' },
+  { id: 'e20', title: '工程調整会議', date: '2025-11-21', startTime: '10:00', endTime: '12:00', userId: '佐藤' },
+  { id: 'e21', title: '発注者打ち合わせ', date: '2025-11-22', startTime: '13:30', endTime: '15:30', userId: '山田太郎' },
+  { id: 'e22', title: '定例会議', date: '2025-11-24', startTime: '15:00', endTime: '17:00', userId: '鈴木' },
+  { id: 'e23', title: '工事進捗確認', date: '2025-11-25', startTime: '10:00', endTime: '12:00', userId: '山田太郎' },
+  { id: 'e24', title: '品質管理報告', date: '2025-11-26', startTime: '09:00', endTime: '10:30', userId: '山田太郎' },
+  { id: 'e25', title: 'ISO監査', date: '2025-11-27', startTime: '09:00', endTime: '12:00', userId: '田中' },
+  { id: 'e26', title: '竣工検査準備', date: '2025-11-28', startTime: '14:00', endTime: '17:00', userId: '山田太郎' },
+  { id: 'e27', title: '月末締め作業', date: '2025-11-29', startTime: '13:00', endTime: '18:00', userId: '佐藤' },
+  { id: 'e28', title: '次月計画立案', date: '2025-11-30', startTime: '09:00', endTime: '11:00', userId: '山田太郎' },
 ];
 
 // 協力会社モックデータ
@@ -1018,6 +984,7 @@ export const mockPartners = [
     phone: '03-1234-5678',
     email: 'info@yamamoto-kogyo.co.jp',
     notes: '機械設備工事を得意とする協力会社。実績多数。',
+    displayColor: '#DC2626', // 赤色
     registeredDate: '2020-04-01',
     updatedDate: '2025-09-15',
   },
@@ -1030,6 +997,7 @@ export const mockPartners = [
     phone: '045-2345-6789',
     email: 'contact@tanaka-denki.co.jp',
     notes: '電気工事専門。受変電設備に強み。',
+    displayColor: '#2563EB', // 青色
     registeredDate: '2019-06-15',
     updatedDate: '2025-08-20',
   },
@@ -1042,6 +1010,7 @@ export const mockPartners = [
     phone: '048-3456-7890',
     email: 'info@sato-kensetsu.jp',
     notes: '鋼構造物工事が専門。大型案件対応可能。',
+    displayColor: '#16A34A', // 緑色
     registeredDate: '2018-03-01',
     updatedDate: '2025-09-01',
   },
@@ -1054,6 +1023,7 @@ export const mockPartners = [
     phone: '043-4567-8901',
     email: 'suzuki@suzuki-tsushin.com',
     notes: '通信設備設置・保守に特化。迅速対応が強み。',
+    displayColor: '', // 未設定（グレー表示）
     registeredDate: '2021-01-20',
     updatedDate: '2025-07-10',
   },
@@ -1066,6 +1036,7 @@ export const mockPartners = [
     phone: '03-5678-9012',
     email: 'info@takahashi-setsubi.co.jp',
     notes: '給排水・空調設備工事全般対応可能。',
+    displayColor: '#EA580C', // オレンジ色
     registeredDate: '2017-09-10',
     updatedDate: '2025-09-20',
   },
@@ -1078,6 +1049,7 @@ export const mockPartners = [
     phone: '044-6789-0123',
     email: 'ito@ito-seisakusho.com',
     notes: '機器制作に特化。カスタム制作対応可能。',
+    displayColor: '#9333EA', // 紫色
     registeredDate: '2020-11-05',
     updatedDate: '2025-08-30',
   },
@@ -1090,6 +1062,7 @@ export const mockPartners = [
     phone: '03-7890-1234',
     email: 'watanabe@watanabe-maintenance.jp',
     notes: '保守点検業務専門。定期点検契約多数。',
+    displayColor: '', // 未設定（グレー表示）
     registeredDate: '2019-02-14',
     updatedDate: '2025-09-10',
   },
@@ -1125,3 +1098,12 @@ export const mockNotifications = [
     isRead: false,
   },
 ];
+
+// 全体予定（会社休日・出勤日設定）モックデータ
+export const mockCompanyHolidays: Array<{
+  id: string;
+  date: string;
+  type: 'holiday' | 'workday';
+  memo?: string;
+  createdBy: string;
+}> = [];

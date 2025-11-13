@@ -21,12 +21,27 @@ export default function SchedulePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedYear, setSelectedYear] = useState<number>(0);
   const [selectedMonth, setSelectedMonth] = useState<number>(0);
+  const [showPartners, setShowPartners] = useState<boolean>(() => {
+    // ローカルストレージから初期値を取得（デフォルト: true）
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('schedule_showPartners');
+      return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/');
     }
   }, [isAuthenticated, router]);
+
+  // 協力会社表示切替の状態をローカルストレージに保存
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('schedule_showPartners', JSON.stringify(showPartners));
+    }
+  }, [showPartners]);
 
   if (!isAuthenticated) {
     return null;
@@ -350,6 +365,15 @@ export default function SchedulePage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <label className="flex items-center gap-2 text-sm whitespace-nowrap cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showPartners}
+                  onChange={(e) => setShowPartners(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                協力会社を表示
+              </label>
               <div className="text-sm text-gray-600 whitespace-nowrap">
                 表示中: {filteredProjects.length}件 / 全{mockProjects.length}件
               </div>
@@ -432,7 +456,28 @@ export default function SchedulePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProjects.map((project, index) => (
+                {filteredProjects.map((project, index) => {
+                  // 協力会社数に応じて行の高さを動的に計算（協力会社表示ONの場合のみ）
+                  const partnerData = (project as any).partnerIds
+                    ? (project as any).partnerIds
+                        .filter((id: string) => id !== '')
+                        .map((id: string) => {
+                          const partner = mockPartners.find(p => p.id === id);
+                          return {
+                            id,
+                            name: partner?.companyName,
+                            displayColor: partner?.displayColor || ''
+                          };
+                        })
+                        .filter((p: any) => p.name)
+                    : [];
+                  const partnerNames = partnerData.map((p: any) => p.name);
+                  const partnerIdsArray = partnerData.map((p: any) => p.id);
+                  const rowHeight = showPartners
+                    ? 50 + (partnerNames.length > 0 ? partnerNames.length * 20 : 0)
+                    : 50;
+
+                  return (
                   <tr
                     key={project.id}
                     className={`${project.isCorins ? 'corins' : ''} cursor-pointer hover:bg-blue-50 transition-colors`}
@@ -468,13 +513,10 @@ export default function SchedulePage() {
                         {project.endDate}
                       </div>
                     </td>
-                    <td colSpan={viewMode === 'month' ? 18 : days.length} className="p-0" style={{ position: 'relative', height: '50px' }}>
+                    <td colSpan={viewMode === 'month' ? 18 : days.length} className="p-0" style={{ position: 'relative', height: `${rowHeight}px` }}>
                       <div className="gantt-row" style={{ position: 'relative' }}>
                         {(() => {
                           const barPos = getGanttBarPosition(project.startDate, project.endDate);
-                          const partnerName = (project as any).partnerId
-                            ? mockPartners.find(p => p.id === (project as any).partnerId)?.companyName
-                            : null;
 
                           // 日別表示の場合で期間が0の場合はスキップ
                           if (viewMode === 'day' && barPos.duration === 0) {
@@ -488,7 +530,7 @@ export default function SchedulePage() {
 
                             if (projectWorkType === '保守点検' || projectWorkType === '機器制作') {
                               // 保守点検・機器制作はシンプルなバー
-                              const hasPartner = partnerName && (project as any).partnerId;
+                              const hasPartners = showPartners && partnerNames.length > 0;
                               return (
                                 <>
                                   <div
@@ -500,23 +542,34 @@ export default function SchedulePage() {
                                   >
                                     <span className="gantt-phase-label">{project.currentPhase || '作業'}</span>
                                   </div>
-                                  {hasPartner && (
+                                  {hasPartners && (
                                     <div
-                                      className="text-xs text-gray-600 cursor-pointer hover:underline hover:text-blue-600"
                                       style={{
                                         position: 'absolute',
                                         left: `${barPos.left}px`,
                                         top: '21px',
                                         fontSize: '10px',
-                                        whiteSpace: 'nowrap'
                                       }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push(`/partners/${(project as any).partnerId}`);
-                                      }}
-                                      title="クリックで協力会社詳細を表示"
                                     >
-                                      {partnerName}
+                                      {partnerData.map((partner: any, idx: number) => {
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className="text-xs cursor-pointer hover:underline hover:text-blue-600"
+                                            style={{
+                                              whiteSpace: 'nowrap',
+                                              color: partner.displayColor || '#6B7280'
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              router.push(`/partners/${partner.id}`);
+                                            }}
+                                            title="クリックで協力会社詳細を表示"
+                                          >
+                                            {partner.name}
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </>
@@ -527,7 +580,7 @@ export default function SchedulePage() {
                               // 施工フェーズ（3番目のフェーズ、index=2）を起点として協力会社名を表示
                               const constructionPhase = phases[2]; // 施工フェーズ
                               const partnerLeftPosition = barPos.left + constructionPhase.left;
-                              const hasPartner = partnerName && (project as any).partnerId;
+                              const hasPartners = showPartners && partnerNames.length > 0;
 
                               return (
                                 <>
@@ -543,23 +596,34 @@ export default function SchedulePage() {
                                       <span className="gantt-phase-label">{phase.label}</span>
                                     </div>
                                   ))}
-                                  {hasPartner && (
+                                  {hasPartners && (
                                     <div
-                                      className="text-xs text-gray-600 cursor-pointer hover:underline hover:text-blue-600"
                                       style={{
                                         position: 'absolute',
                                         left: `${partnerLeftPosition}px`,
                                         top: '21px',
                                         fontSize: '10px',
-                                        whiteSpace: 'nowrap'
                                       }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push(`/partners/${(project as any).partnerId}`);
-                                      }}
-                                      title="クリックで協力会社詳細を表示"
                                     >
-                                      {partnerName}
+                                      {partnerData.map((partner: any, idx: number) => {
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className="text-xs cursor-pointer hover:underline hover:text-blue-600"
+                                            style={{
+                                              whiteSpace: 'nowrap',
+                                              color: partner.displayColor || '#6B7280'
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              router.push(`/partners/${partner.id}`);
+                                            }}
+                                            title="クリックで協力会社詳細を表示"
+                                          >
+                                            {partner.name}
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </>
@@ -567,7 +631,7 @@ export default function SchedulePage() {
                             }
                           } else {
                             // 日別表示の場合はシンプルなバーのみ
-                            const hasPartner = partnerName && (project as any).partnerId;
+                            const hasPartners = showPartners && partnerNames.length > 0;
                             return (
                               <>
                                 <div
@@ -579,23 +643,34 @@ export default function SchedulePage() {
                                 >
                                   <span className="gantt-phase-label">{project.currentPhase || '施工'}</span>
                                 </div>
-                                {hasPartner && (
+                                {hasPartners && (
                                   <div
-                                    className="text-xs text-gray-600 cursor-pointer hover:underline hover:text-blue-600"
                                     style={{
                                       position: 'absolute',
                                       left: `${barPos.left}px`,
                                       top: '21px',
                                       fontSize: '10px',
-                                      whiteSpace: 'nowrap'
                                     }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      router.push(`/partners/${(project as any).partnerId}`);
-                                    }}
-                                    title="クリックで協力会社詳細を表示"
                                   >
-                                    {partnerName}
+                                    {partnerData.map((partner: any, idx: number) => {
+                                      return (
+                                        <div
+                                          key={idx}
+                                          className="text-xs cursor-pointer hover:underline hover:text-blue-600"
+                                          style={{
+                                            whiteSpace: 'nowrap',
+                                            color: partner.displayColor || '#6B7280'
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/partners/${partner.id}`);
+                                          }}
+                                          title="クリックで協力会社詳細を表示"
+                                        >
+                                          {partner.name}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </>
@@ -608,7 +683,8 @@ export default function SchedulePage() {
                       {project.amount > 45000000 ? '専任必要' : ''}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

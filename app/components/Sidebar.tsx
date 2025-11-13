@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/app/lib/store';
 import { usePermissions } from '@/app/lib/usePermissions';
-import { mockProjects } from '@/app/lib/mockData';
+import { mockProjects, mockStaff } from '@/app/lib/mockData';
 import {
   Clock,
   FolderOpen,
@@ -34,6 +34,38 @@ export default function Sidebar() {
   // タスク割当ステータスの案件数をカウント
   const taskAssignmentCount = mockProjects.filter(p => p.status === 'タスク割当').length;
 
+  // 自動車免許有効期限または資格有効期限が1ヶ月前以降の従業員数をカウント
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const oneMonthFromToday = new Date(today);
+  oneMonthFromToday.setDate(oneMonthFromToday.getDate() + 30);
+
+  const licenseExpiringCount = mockStaff.filter((emp) => {
+    // 自動車免許のチェック
+    if (emp.driverLicenseExpiry) {
+      const expiryDate = new Date(emp.driverLicenseExpiry);
+      expiryDate.setHours(0, 0, 0, 0);
+      if (expiryDate <= oneMonthFromToday && expiryDate >= today) {
+        return true;
+      }
+    }
+
+    // 資格のチェック（免許カテゴリのみ）
+    if (emp.qualifications && emp.qualifications.length > 0) {
+      const hasExpiringQualification = emp.qualifications.some((qual: any) => {
+        if (qual.category1 !== '免許' || !qual.expiryDate) return false;
+        const expiryDate = new Date(qual.expiryDate);
+        expiryDate.setHours(0, 0, 0, 0);
+        return expiryDate <= oneMonthFromToday && expiryDate >= today;
+      });
+      if (hasExpiringQualification) {
+        return true;
+      }
+    }
+
+    return false;
+  }).length;
+
   return (
     <aside className="sidebar text-white p-4">
       <div className="mb-6">
@@ -58,7 +90,10 @@ export default function Sidebar() {
 
           // ダッシュボードの場合は通知バッジを表示
           const isDashboard = item.label === 'ダッシュボード';
+          const isEmployeeManagement = item.label === '従業員管理';
           const showBadge = isDashboard && taskAssignmentCount > 0;
+          const showLicenseBadge = isEmployeeManagement && licenseExpiringCount > 0;
+          const badgeCount = isDashboard ? taskAssignmentCount : licenseExpiringCount;
 
           return (
             <li key={item.href}>
@@ -70,9 +105,9 @@ export default function Sidebar() {
               >
                 <IconComponent size={20} />
                 <span className="flex-1">{item.label}</span>
-                {showBadge && (
+                {(showBadge || showLicenseBadge) && (
                   <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {taskAssignmentCount}
+                    {badgeCount}
                   </span>
                 )}
               </Link>

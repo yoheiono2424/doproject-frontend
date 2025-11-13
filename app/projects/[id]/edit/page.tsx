@@ -22,7 +22,7 @@ export default function ProjectEditPage() {
     contractType: '',
     projectType: '',
     amount: '',
-    partnerId: '',
+    partnerIds: [''],
     clientName: '',
     siteName: '',
     projectName: '',
@@ -47,7 +47,7 @@ export default function ProjectEditPage() {
         contractType: project.contractType,
         projectType: project.type,
         amount: project.amount.toString(),
-        partnerId: project.partnerId || '',
+        partnerIds: project.partnerIds || [''],
         clientName: project.clientName,
         siteName: project.siteName,
         projectName: project.projectName,
@@ -91,6 +91,27 @@ export default function ProjectEditPage() {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+  };
+
+  // 協力会社管理用のヘルパー関数
+  const addPartner = () => {
+    setFormData({ ...formData, partnerIds: [...formData.partnerIds, ''] });
+  };
+
+  const removePartner = (index: number) => {
+    const newPartnerIds = formData.partnerIds.filter((_, i) => i !== index);
+    setFormData({ ...formData, partnerIds: newPartnerIds });
+  };
+
+  const updatePartnerId = (index: number, value: string) => {
+    const newPartnerIds = [...formData.partnerIds];
+    newPartnerIds[index] = value;
+    setFormData({ ...formData, partnerIds: newPartnerIds });
+  };
+
+  const availablePartners = (currentIndex: number) => {
+    const selectedIds = formData.partnerIds.filter((id, i) => i !== currentIndex && id !== '');
+    return mockPartners.filter(partner => !selectedIds.includes(partner.id));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -194,6 +215,11 @@ export default function ProjectEditPage() {
                     >
                       <option value="機械">機械</option>
                       <option value="電気">電気</option>
+                      <option value="鋼造">鋼造</option>
+                      <option value="通信">通信</option>
+                      <option value="納品">納品</option>
+                      <option value="管工事">管工事</option>
+                      <option value="その他">その他</option>
                     </select>
                   </div>
                   <div>
@@ -209,20 +235,41 @@ export default function ProjectEditPage() {
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium mb-1">協力会社</label>
-                    <select
-                      name="partnerId"
-                      value={formData.partnerId}
-                      onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
-                    >
-                      <option value="">選択してください（任意）</option>
-                      {mockPartners.map((partner) => (
-                        <option key={partner.id} value={partner.id}>
-                          {partner.companyName}
-                        </option>
+                    <label className="block text-sm font-medium mb-1">協力会社（複数選択可）</label>
+                    <div className="space-y-2">
+                      {formData.partnerIds.map((partnerId, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <select
+                            value={partnerId}
+                            onChange={(e) => updatePartnerId(index, e.target.value)}
+                            className="flex-1 border rounded px-3 py-2"
+                          >
+                            <option value="">選択してください（任意）</option>
+                            {availablePartners(index).map((partner) => (
+                              <option key={partner.id} value={partner.id}>
+                                {partner.companyName}
+                              </option>
+                            ))}
+                          </select>
+                          {formData.partnerIds.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removePartner(index)}
+                              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                            >
+                              × 削除
+                            </button>
+                          )}
+                        </div>
                       ))}
-                    </select>
+                      <button
+                        type="button"
+                        onClick={addPartner}
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                      >
+                        + 協力会社を追加
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

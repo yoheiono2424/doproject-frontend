@@ -19,7 +19,7 @@ export default function ProjectRegisterPage() {
     workType: '工事',
     projectType: '機械',
     amount: '',
-    partnerId: '',
+    partnerIds: [''],
     clientName: '',
     siteName: '',
     projectName: '',
@@ -103,6 +103,27 @@ export default function ProjectRegisterPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  // 協力会社管理用のヘルパー関数
+  const addPartner = () => {
+    setFormData({ ...formData, partnerIds: [...formData.partnerIds, ''] });
+  };
+
+  const removePartner = (index: number) => {
+    const newPartnerIds = formData.partnerIds.filter((_, i) => i !== index);
+    setFormData({ ...formData, partnerIds: newPartnerIds });
+  };
+
+  const updatePartnerId = (index: number, value: string) => {
+    const newPartnerIds = [...formData.partnerIds];
+    newPartnerIds[index] = value;
+    setFormData({ ...formData, partnerIds: newPartnerIds });
+  };
+
+  const availablePartners = (currentIndex: number) => {
+    const selectedIds = formData.partnerIds.filter((id, i) => i !== currentIndex && id !== '');
+    return mockPartners.filter(partner => !selectedIds.includes(partner.id));
   };
 
   return (
@@ -200,26 +221,48 @@ export default function ProjectRegisterPage() {
                       <option value="鋼造">鋼造</option>
                       <option value="通信">通信</option>
                       <option value="納品">納品</option>
+                      <option value="管工事">管工事</option>
                       <option value="その他">その他</option>
                     </select>
                   </div>
                   <div className="col-span-3">
                     <label className="block text-sm font-medium mb-1">
-                      協力会社
+                      協力会社（複数選択可）
                     </label>
-                    <select
-                      name="partnerId"
-                      value={formData.partnerId}
-                      onChange={handleInputChange}
-                      className="w-full border rounded px-3 py-2"
-                    >
-                      <option value="">選択してください（任意）</option>
-                      {mockPartners.map((partner) => (
-                        <option key={partner.id} value={partner.id}>
-                          {partner.companyName}
-                        </option>
+                    <div className="space-y-2">
+                      {formData.partnerIds.map((partnerId, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <select
+                            value={partnerId}
+                            onChange={(e) => updatePartnerId(index, e.target.value)}
+                            className="flex-1 border rounded px-3 py-2"
+                          >
+                            <option value="">選択してください（任意）</option>
+                            {availablePartners(index).map((partner) => (
+                              <option key={partner.id} value={partner.id}>
+                                {partner.companyName}
+                              </option>
+                            ))}
+                          </select>
+                          {formData.partnerIds.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removePartner(index)}
+                              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                            >
+                              × 削除
+                            </button>
+                          )}
+                        </div>
                       ))}
-                    </select>
+                      <button
+                        type="button"
+                        onClick={addPartner}
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                      >
+                        + 協力会社を追加
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -341,7 +384,7 @@ export default function ProjectRegisterPage() {
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">クライアント会社名</label>
+                    <label className="block text-sm font-medium mb-1">受注先名</label>
                     <input
                       type="text"
                       name="clientCompanyName"

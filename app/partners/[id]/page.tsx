@@ -115,6 +115,20 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
               <p className="whitespace-pre-wrap">{partner.notes || '-'}</p>
             </div>
 
+            <div>
+              <label className="text-sm font-medium text-gray-600">工程表表示色</label>
+              <div className="flex items-center gap-2 mt-1">
+                <div
+                  className="w-4 h-4 border border-gray-300 rounded"
+                  style={{ backgroundColor: partner.displayColor || '#6B7280' }}
+                  title={partner.displayColor ? '工程表表示色設定済み' : '工程表表示色未設定'}
+                />
+                <span className="text-sm">
+                  {partner.displayColor ? '設定済み' : '未設定（グレー）'}
+                </span>
+              </div>
+            </div>
+
             <div className="pt-4 border-t">
               <div className="flex justify-between text-sm text-gray-500">
                 <span>登録日: {partner.registeredDate}</span>

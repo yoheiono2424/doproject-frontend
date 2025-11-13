@@ -58,11 +58,19 @@ export const usePermissions = () => {
     return hasHighPermission();
   };
 
+  /**
+   * 全体予定（会社休日・出勤日）を管理できるか
+   */
+  const canManageCompanyHolidays = (): boolean => {
+    return hasHighPermission();
+  };
+
   return {
     hasHighPermission,
     canAccessEmployeeManagement,
     canEditProjectDetails,
     canAccessOperationLog,
+    canManageCompanyHolidays,
     user,
   };
 };

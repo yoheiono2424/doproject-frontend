@@ -79,8 +79,18 @@ export default function PartnersPage() {
             {filteredPartners.map((partner) => (
               <tr key={partner.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{partner.companyName}</div>
-                  <div className="text-sm text-gray-500">{partner.companyNameKana}</div>
+                  <div className="flex items-center gap-2">
+                    {/* 色インジケーター */}
+                    <div
+                      className="w-3 h-3 flex-shrink-0"
+                      style={{ backgroundColor: partner.displayColor || '#6B7280' }}
+                      title={partner.displayColor ? '工程表表示色設定済み' : '工程表表示色未設定'}
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{partner.companyName}</div>
+                      <div className="text-sm text-gray-500">{partner.companyNameKana}</div>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {partner.representative || '-'}

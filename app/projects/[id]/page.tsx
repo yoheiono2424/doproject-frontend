@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects, mockTasks } from '@/app/lib/mockData';
+import { mockProjects, mockTasks, mockPartners } from '@/app/lib/mockData';
 import { usePermissions } from '@/app/lib/usePermissions';
 
 export default function ProjectDetailPage() {
@@ -108,6 +108,23 @@ export default function ProjectDetailPage() {
                     <span className="status-badge bg-blue-100 text-blue-700">
                       {project.currentPhase}
                     </span>
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm text-gray-600">協力会社</label>
+                  <div className="font-medium">
+                    {project.partnerIds && project.partnerIds.length > 0 && project.partnerIds[0] !== '' ? (
+                      <div className="space-y-1">
+                        {project.partnerIds.map((partnerId, index) => {
+                          const partner = mockPartners.find(p => p.id === partnerId);
+                          return partner ? (
+                            <div key={index}>{partner.companyName}</div>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
                   </div>
                 </div>
               </div>

@@ -141,28 +141,37 @@ export default function DashboardPage() {
     return '複数人選択';
   };
 
-  // タスクを5段階に分類
-  const overdueTasks = filteredTasks.filter((t) => t.daysUntilDeadline < 0);
-  const todayTasks = filteredTasks.filter((t) => t.daysUntilDeadline === 0);
-  const within3DaysTasks = filteredTasks.filter((t) => t.daysUntilDeadline > 0 && t.daysUntilDeadline <= 3);
-  const within7DaysTasks = filteredTasks.filter((t) => t.daysUntilDeadline > 3 && t.daysUntilDeadline <= 7);
-  const after7DaysTasks = filteredTasks.filter((t) => t.daysUntilDeadline > 7);
+  // タスクを7段階に分類（31日以降は非表示）
+  const tasksWithin30Days = filteredTasks.filter((t) => t.daysUntilDeadline <= 30);
+  const overdueTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline < 0);
+  const todayTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline === 0);
+  const tomorrow1DayTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline === 1);
+  const within1WeekTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline >= 2 && t.daysUntilDeadline <= 7);
+  const within2WeeksTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline >= 8 && t.daysUntilDeadline <= 14);
+  const within3WeeksTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline >= 15 && t.daysUntilDeadline <= 21);
+  const within1MonthTasks = tasksWithin30Days.filter((t) => t.daysUntilDeadline >= 22 && t.daysUntilDeadline <= 30);
 
-  // 色分けクラスを取得
+  // 色分けクラスを取得（7段階）
   const getColorClass = (daysUntil: number) => {
     if (daysUntil < 0) return 'bg-red-50 border-red-500';
     if (daysUntil === 0) return 'bg-orange-50 border-orange-500';
-    if (daysUntil <= 3) return 'bg-yellow-50 border-yellow-500';
-    if (daysUntil <= 7) return 'bg-green-50 border-green-500';
-    return 'bg-blue-50 border-blue-500';
+    if (daysUntil === 1) return 'bg-yellow-50 border-yellow-500';
+    if (daysUntil >= 2 && daysUntil <= 7) return 'bg-green-50 border-green-500';
+    if (daysUntil >= 8 && daysUntil <= 14) return 'bg-blue-50 border-blue-500';
+    if (daysUntil >= 15 && daysUntil <= 21) return 'bg-purple-50 border-purple-500';
+    if (daysUntil >= 22 && daysUntil <= 30) return 'bg-gray-50 border-gray-500';
+    return 'bg-gray-50 border-gray-300'; // 31日以降（表示されないがフォールバック）
   };
 
   const getTextColorClass = (daysUntil: number) => {
     if (daysUntil < 0) return 'text-red-700';
     if (daysUntil === 0) return 'text-orange-700';
-    if (daysUntil <= 3) return 'text-yellow-700';
-    if (daysUntil <= 7) return 'text-green-700';
-    return 'text-blue-700';
+    if (daysUntil === 1) return 'text-yellow-700';
+    if (daysUntil >= 2 && daysUntil <= 7) return 'text-green-700';
+    if (daysUntil >= 8 && daysUntil <= 14) return 'text-blue-700';
+    if (daysUntil >= 15 && daysUntil <= 21) return 'text-purple-700';
+    if (daysUntil >= 22 && daysUntil <= 30) return 'text-gray-700';
+    return 'text-gray-600'; // 31日以降（表示されないがフォールバック）
   };
 
   // タスクセクションレンダリング
@@ -276,6 +285,114 @@ export default function DashboardPage() {
             );
           })()}
 
+          {/* 自動車免許更新期限アラート */}
+          {(() => {
+            if (!user) return null;
+
+            // ログインユーザーの従業員情報を取得
+            const currentEmployee = mockStaff.find((s) => s.name === user.name);
+            if (!currentEmployee || !currentEmployee.driverLicenseExpiry) return null;
+
+            // 有効期限が1ヶ月前（30日前）以降かチェック
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiryDate = new Date(currentEmployee.driverLicenseExpiry);
+            expiryDate.setHours(0, 0, 0, 0);
+            const oneMonthFromToday = new Date(today);
+            oneMonthFromToday.setDate(oneMonthFromToday.getDate() + 30);
+
+            // 有効期限が今日から30日以内の場合にアラート表示
+            if (expiryDate <= oneMonthFromToday && expiryDate >= today) {
+              return (
+                <div className="mb-6">
+                  <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded shadow p-4">
+                    <h3 className="font-bold text-yellow-700 text-lg mb-2">
+                      ⚠️ あなたの自動車免許の有効期限が1ヶ月前に迫っています
+                    </h3>
+                    <p className="text-yellow-700">
+                      有効期限：{currentEmployee.driverLicenseExpiry}
+                    </p>
+                    <button
+                      onClick={() => router.push(`/staff/${currentEmployee.id}`)}
+                      className="mt-3 text-sm bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition-colors"
+                    >
+                      詳細を確認
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {/* 資格有効期限アラート */}
+          {(() => {
+            if (!user) return null;
+
+            // ログインユーザーの従業員情報を取得
+            const currentEmployee = mockStaff.find((s) => s.name === user.name);
+            if (!currentEmployee || !currentEmployee.qualifications || currentEmployee.qualifications.length === 0) return null;
+
+            // 有効期限が1ヶ月前（30日前）以降の免許資格をチェック
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const oneMonthFromToday = new Date(today);
+            oneMonthFromToday.setDate(oneMonthFromToday.getDate() + 30);
+
+            const expiringQualifications = currentEmployee.qualifications.filter((qual: any) => {
+              if (qual.category1 !== '免許' || !qual.expiryDate) return false;
+
+              const expiryDate = new Date(qual.expiryDate);
+              expiryDate.setHours(0, 0, 0, 0);
+
+              return expiryDate <= oneMonthFromToday && expiryDate >= today;
+            });
+
+            if (expiringQualifications.length === 0) return null;
+
+            return (
+              <div className="mb-6">
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded shadow p-4">
+                  <h3 className="font-bold text-yellow-700 text-lg mb-2">
+                    ⚠️ あなたの資格の有効期限が1ヶ月前に迫っています
+                  </h3>
+                  <div className="space-y-2 mb-3">
+                    {expiringQualifications.map((qual: any, index: number) => {
+                      const expiryDate = new Date(qual.expiryDate);
+                      const daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                      let qualificationDisplayName = '';
+                      if (qual.qualificationDetail) {
+                        qualificationDisplayName = `${qual.qualificationName}（${qual.qualificationDetail}）`;
+                      } else {
+                        qualificationDisplayName = qual.qualificationName;
+                      }
+
+                      return (
+                        <div key={index} className="bg-white rounded p-3 border border-yellow-300">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-800">{qualificationDisplayName}</p>
+                              <p className="text-sm text-gray-600">
+                                有効期限：{qual.expiryDate} <span className="font-bold text-yellow-700">（残り{daysRemaining}日）</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => router.push(`/staff/${currentEmployee.id}`)}
+                    className="text-sm bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition-colors"
+                  >
+                    詳細を確認
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 担当者フィルター */}
           <div className="mb-6 flex items-center gap-4">
             <div className="relative" ref={filterRef}>
@@ -321,21 +438,27 @@ export default function DashboardPage() {
             </div>
 
             <div className="text-sm text-gray-600">
-              表示中のタスク: {filteredTasks.length}件
+              表示中のタスク: {tasksWithin30Days.length}件（30日以内）
             </div>
           </div>
 
-          {/* 5段階タスクセクション */}
+          {/* 7段階タスクセクション */}
           {renderTaskSection('期限切れ', overdueTasks, '🔴')}
           {renderTaskSection('本日期限', todayTasks, '🟠')}
-          {renderTaskSection('3日以内', within3DaysTasks, '🟡')}
-          {renderTaskSection('7日以内', within7DaysTasks, '🟢')}
-          {renderTaskSection('7日以降', after7DaysTasks, '🔵')}
+          {renderTaskSection('1日以内（明日）', tomorrow1DayTasks, '🟡')}
+          {renderTaskSection('1週間以内（2〜7日）', within1WeekTasks, '🟢')}
+          {renderTaskSection('2週間以内（8〜14日）', within2WeeksTasks, '🔵')}
+          {renderTaskSection('3週間以内（15〜21日）', within3WeeksTasks, '🟣')}
+          {renderTaskSection('1ヶ月以内（22〜30日）', within1MonthTasks, '⚪')}
 
-          {filteredTasks.length === 0 && (
+          {tasksWithin30Days.length === 0 && (
             <div className="bg-white rounded shadow p-8 text-center text-gray-500">
               <p>表示するタスクがありません。</p>
-              <p className="text-sm mt-2">担当者フィルターを変更してください。</p>
+              <p className="text-sm mt-2">
+                {filteredTasks.length > 0
+                  ? '30日以内の期限タスクがありません。'
+                  : '担当者フィルターを変更してください。'}
+              </p>
             </div>
           )}
         </div>

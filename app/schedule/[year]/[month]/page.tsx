@@ -6,8 +6,10 @@ import Link from 'next/link';
 import Sidebar from '@/app/components/Sidebar';
 import WeekView from '@/app/components/WeekView';
 import { useAuthStore } from '@/app/lib/store';
-import { mockProjects, mockTasks, mockPersonalEvents, mockStaff } from '@/app/lib/mockData';
+import { mockProjects, mockTasks, mockPersonalEvents, mockStaff, mockCompanyHolidays } from '@/app/lib/mockData';
+import { usePermissions } from '@/app/lib/usePermissions';
 import { CalendarDays, CheckSquare, Calendar as CalendarIcon, List } from 'lucide-react';
+import JapaneseHolidays from 'japanese-holidays';
 
 export default function CalendarViewPage() {
   const router = useRouter();
@@ -26,6 +28,10 @@ export default function CalendarViewPage() {
   const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>(mockPersonalEvents);
   const [editingEvent, setEditingEvent] = useState<PersonalEvent | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [companyHolidays, setCompanyHolidays] = useState(mockCompanyHolidays);
+  const [showCompanyHolidayModal, setShowCompanyHolidayModal] = useState(false);
+  const [editingCompanyHoliday, setEditingCompanyHoliday] = useState<CompanyHoliday | null>(null);
+  const { canManageCompanyHolidays } = usePermissions();
 
   type PersonalEvent = {
     id: string;
@@ -34,6 +40,14 @@ export default function CalendarViewPage() {
     startTime: string;
     endTime: string;
     userId: string;
+  };
+
+  type CompanyHoliday = {
+    id: string;
+    date: string;
+    type: 'holiday' | 'workday';
+    memo?: string;
+    createdBy: string;
   };
 
   type CalendarTaskType = {
@@ -107,6 +121,55 @@ export default function CalendarViewPage() {
   if (!isAuthenticated) {
     return null;
   }
+
+  // 祝日判定
+  const getHoliday = (year: number, month: number, day: number) => {
+    const holidays = JapaneseHolidays.getHolidaysOf(year);
+    const holiday = holidays.find(h => h.month === month && h.date === day);
+    return holiday ? holiday.name : null;
+  };
+
+  // 全体予定（会社休日・出勤日）の判定
+  const getCompanyHoliday = (dateStr: string) => {
+    return companyHolidays.find(ch => ch.date === dateStr);
+  };
+
+  // 日付の種別を判定（優先順位: 出勤日設定 > 休日設定 > 祝日 > 日曜日 > 土曜日）
+  const getDateType = (year: number, month: number, day: number) => {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const date = new Date(year, month - 1, day);
+    const dayOfWeek = date.getDay();
+
+    // 出勤日設定チェック（最優先）
+    const companyHoliday = getCompanyHoliday(dateStr);
+    if (companyHoliday && companyHoliday.type === 'workday') {
+      return { type: 'workday', label: null, bgColor: 'bg-white' };
+    }
+
+    // 休日設定チェック
+    if (companyHoliday && companyHoliday.type === 'holiday') {
+      return { type: 'company-holiday', label: companyHoliday.memo || '休日', bgColor: 'bg-pink-50' };
+    }
+
+    // 祝日チェック
+    const holidayName = getHoliday(year, month, day);
+    if (holidayName) {
+      return { type: 'holiday', label: holidayName, bgColor: 'bg-pink-50' };
+    }
+
+    // 日曜日チェック
+    if (dayOfWeek === 0) {
+      return { type: 'sunday', label: null, bgColor: 'bg-pink-50' };
+    }
+
+    // 土曜日
+    if (dayOfWeek === 6) {
+      return { type: 'saturday', label: null, bgColor: 'bg-white' };
+    }
+
+    // 平日
+    return { type: 'weekday', label: null, bgColor: 'bg-white' };
+  };
 
   // カレンダー情報の計算
   const firstDay = new Date(year, month - 1, 1);
@@ -201,15 +264,12 @@ export default function CalendarViewPage() {
             const deadlineDate = new Date(task.deadline);
             deadlineDate.setHours(0, 0, 0, 0);
 
-            let urgency = 'normal';
-            const daysUntil = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            let urgency = 'future';
 
             if (deadlineDate < today) {
               urgency = 'overdue';
             } else if (deadlineDate.getTime() === today.getTime()) {
               urgency = 'today';
-            } else if (daysUntil <= 3) {
-              urgency = 'near';
             }
 
             tasks.push({
@@ -338,6 +398,35 @@ export default function CalendarViewPage() {
     setEditingEvent(null);
   };
 
+  // 全体予定の保存
+  const handleSaveCompanyHoliday = (holidayData: { date: string; type: 'holiday' | 'workday'; memo?: string }) => {
+    if (editingCompanyHoliday) {
+      // 編集
+      setCompanyHolidays(companyHolidays.map(ch =>
+        ch.id === editingCompanyHoliday.id
+          ? { ...ch, ...holidayData }
+          : ch
+      ));
+    } else {
+      // 新規追加
+      const newHoliday: CompanyHoliday = {
+        id: `ch${Date.now()}`,
+        ...holidayData,
+        createdBy: user?.name || '管理者',
+      };
+      setCompanyHolidays([...companyHolidays, newHoliday]);
+    }
+    setShowCompanyHolidayModal(false);
+    setEditingCompanyHoliday(null);
+  };
+
+  // 全体予定の削除
+  const handleDeleteCompanyHoliday = (holidayId: string) => {
+    setCompanyHolidays(companyHolidays.filter(ch => ch.id !== holidayId));
+    setShowCompanyHolidayModal(false);
+    setEditingCompanyHoliday(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -349,31 +438,27 @@ export default function CalendarViewPage() {
                 <h2 className="text-2xl font-bold">
                   {year}年{monthNames[month - 1]} カレンダー
                 </h2>
-                <div className="flex gap-3 ml-4">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-red-100 border border-red-300"></div>
-                    <span className="text-xs">期限切れ</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-orange-100 border border-orange-300"></div>
-                    <span className="text-xs">本日期限</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-yellow-100 border border-yellow-300"></div>
-                    <span className="text-xs">3日以内</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-blue-50 border border-blue-200"></div>
-                    <span className="text-xs">通常</span>
-                  </div>
-                </div>
               </div>
-              <button
-                onClick={handleAddEventClick}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                + 予定追加
-              </button>
+              <div className="flex gap-2">
+                {canManageCompanyHolidays() && (
+                  <button
+                    onClick={() => {
+                      setSelectedDate(null);
+                      setEditingCompanyHoliday(null);
+                      setShowCompanyHolidayModal(true);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    + 全体予定追加
+                  </button>
+                )}
+                <button
+                  onClick={handleAddEventClick}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  + 予定追加
+                </button>
+              </div>
             </div>
 
             {/* 表示切り替えボタン */}
@@ -703,6 +788,7 @@ export default function CalendarViewPage() {
                           const isToday = day === new Date().getDate() &&
                                         month === new Date().getMonth() + 1 &&
                                         year === new Date().getFullYear();
+                          const dateType = day ? getDateType(year, month, day) : null;
 
                           // タブごとの表示判定
                           const shouldShowTasks = (activeTab === 'tasks' || activeTab === 'all') && tasks.length > 0;
@@ -715,8 +801,7 @@ export default function CalendarViewPage() {
                               className={`border p-1 align-top cursor-pointer hover:bg-gray-100 ${
                                 !day ? 'bg-gray-50' :
                                 isToday ? 'bg-yellow-50' :
-                                dayIndex === 0 ? 'bg-red-50' :
-                                dayIndex === 6 ? 'bg-blue-50' :
+                                dateType ? dateType.bgColor :
                                 ''
                               }`}
                               style={{
@@ -738,6 +823,11 @@ export default function CalendarViewPage() {
                                   }`}>
                                     {day}
                                   </div>
+                                  {dateType?.label && (
+                                    <div className="text-xs text-red-600 mb-1">
+                                      {dateType.label}
+                                    </div>
+                                  )}
                                   <div className="space-y-1" style={{ fontSize: '11px' }}>
                                     {/* 業務タスクの表示（一番上） */}
                                     {shouldShowTasks && tasks.map((task: CalendarTaskType) => (
@@ -746,8 +836,7 @@ export default function CalendarViewPage() {
                                         className={`p-0.5 rounded cursor-pointer hover:opacity-80 ${
                                           task.urgency === 'overdue' ? 'bg-red-100 text-red-700 border border-red-300' :
                                           task.urgency === 'today' ? 'bg-orange-100 text-orange-700 border border-orange-300' :
-                                          task.urgency === 'near' ? 'bg-yellow-100 text-yellow-700 border border-yellow-300' :
-                                          'bg-blue-50 text-blue-700 border border-blue-200'
+                                          'bg-cyan-100 text-cyan-700 border border-cyan-300'
                                         }`}
                                         onClick={() => router.push(`/projects/${task.projectId}`)}
                                         onMouseEnter={(e) => handleTaskHover(task, e)}
@@ -824,14 +913,12 @@ export default function CalendarViewPage() {
             <div className={`font-semibold ${
               hoveredTask.urgency === 'overdue' ? 'text-red-700' :
               hoveredTask.urgency === 'today' ? 'text-orange-700' :
-              hoveredTask.urgency === 'near' ? 'text-yellow-700' :
-              'text-green-700'
+              'text-cyan-700'
             }`}>
               ステータス: {
                 hoveredTask.urgency === 'overdue' ? '期限切れ' :
                 hoveredTask.urgency === 'today' ? '本日期限' :
-                hoveredTask.urgency === 'near' ? '3日以内' :
-                '通常'
+                '今後の予定'
               }
             </div>
           </div>
@@ -840,6 +927,9 @@ export default function CalendarViewPage() {
 
       {/* 個人予定追加・編集モーダル */}
       {showEventModal && <EventModal />}
+
+      {/* 全体予定追加・編集モーダル */}
+      {showCompanyHolidayModal && <CompanyHolidayModal />}
     </div>
   );
 
@@ -848,6 +938,16 @@ export default function CalendarViewPage() {
     const [date, setDate] = useState(selectedDate || editingEvent?.date || '');
     const [startTime, setStartTime] = useState(editingEvent?.startTime || '');
     const [endTime, setEndTime] = useState(editingEvent?.endTime || '');
+    const [isAllDay, setIsAllDay] = useState(false);
+
+    // 終日チェック時の処理
+    const handleAllDayChange = (checked: boolean) => {
+      setIsAllDay(checked);
+      if (checked) {
+        setStartTime('08:00');
+        setEndTime('17:00');
+      }
+    };
 
     const handleSubmit = () => {
       if (!title || !date || !startTime || !endTime) {
@@ -884,12 +984,24 @@ export default function CalendarViewPage() {
               />
             </div>
             <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAllDay}
+                  onChange={(e) => handleAllDayChange(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-semibold">終日（8:00〜17:00）</span>
+              </label>
+            </div>
+            <div>
               <label className="block text-sm font-semibold mb-1">開始時刻 <span className="text-red-600">*</span></label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="w-full border rounded px-3 py-2"
+                disabled={isAllDay}
               />
             </div>
             <div>
@@ -899,6 +1011,7 @@ export default function CalendarViewPage() {
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="w-full border rounded px-3 py-2"
+                disabled={isAllDay}
               />
             </div>
           </div>
@@ -924,6 +1037,169 @@ export default function CalendarViewPage() {
             <button
               onClick={handleSubmit}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function CompanyHolidayModal() {
+    const [dates, setDates] = useState<string[]>(editingCompanyHoliday ? [editingCompanyHoliday.date] : ['']);
+    const [type, setType] = useState<'holiday' | 'workday'>(editingCompanyHoliday?.type || 'holiday');
+    const [memo, setMemo] = useState(editingCompanyHoliday?.memo || '');
+
+    const handleAddDate = () => {
+      setDates([...dates, '']);
+    };
+
+    const handleRemoveDate = (index: number) => {
+      if (dates.length === 1) {
+        alert('日付は最低1つ必要です');
+        return;
+      }
+      setDates(dates.filter((_, i) => i !== index));
+    };
+
+    const handleDateChange = (index: number, value: string) => {
+      const newDates = [...dates];
+      newDates[index] = value;
+      setDates(newDates);
+    };
+
+    const handleSubmit = () => {
+      // 全ての日付が入力されているかチェック
+      if (dates.some(d => !d)) {
+        alert('すべての日付を入力してください');
+        return;
+      }
+
+      // 編集モードの場合
+      if (editingCompanyHoliday) {
+        handleSaveCompanyHoliday({ date: dates[0], type, memo });
+        return;
+      }
+
+      // 新規追加モードの場合：全日付に対して一括登録
+      dates.forEach(date => {
+        const newHoliday: CompanyHoliday = {
+          id: `ch${Date.now()}_${Math.random()}`,
+          date,
+          type,
+          memo,
+          createdBy: user?.name || '管理者',
+        };
+        setCompanyHolidays(prev => [...prev, newHoliday]);
+      });
+
+      setShowCompanyHolidayModal(false);
+      setEditingCompanyHoliday(null);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <h3 className="text-xl font-bold mb-4">
+            {editingCompanyHoliday ? '全体予定を編集' : '全体予定を追加'}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">日付 <span className="text-red-600">*</span></label>
+              <div className="space-y-2">
+                {dates.map((date, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => handleDateChange(index, e.target.value)}
+                      className="flex-1 border rounded px-3 py-2"
+                    />
+                    {!editingCompanyHoliday && (
+                      <button
+                        onClick={() => handleRemoveDate(index)}
+                        className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                        title="この日付を削除"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {!editingCompanyHoliday && (
+                  <button
+                    onClick={handleAddDate}
+                    className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+                  >
+                    + 日付を追加
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">種別 <span className="text-red-600">*</span></label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="holidayType"
+                    value="holiday"
+                    checked={type === 'holiday'}
+                    onChange={(e) => setType('holiday')}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">休日設定（平日を休日にする）</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="holidayType"
+                    value="workday"
+                    checked={type === 'workday'}
+                    onChange={(e) => setType('workday')}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">出勤日設定（休日を出勤日にする）</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">メモ（任意）</label>
+              <input
+                type="text"
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="例：年末年始休暇、GW、お盆休み"
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex gap-2 justify-end">
+            {editingCompanyHoliday && (
+              <button
+                onClick={() => {
+                  if (confirm('この全体予定を削除しますか？')) {
+                    handleDeleteCompanyHoliday(editingCompanyHoliday.id);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                削除
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setShowCompanyHolidayModal(false);
+                setEditingCompanyHoliday(null);
+              }}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               保存
             </button>

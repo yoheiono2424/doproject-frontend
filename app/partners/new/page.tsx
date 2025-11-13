@@ -18,7 +18,22 @@ export default function NewPartnerPage() {
     contactPhone: '',
     email: '',
     notes: '',
+    displayColor: '', // 工程表表示色（任意）
   });
+
+  // プリセット色（10色）
+  const presetColors = [
+    { name: '赤色', hex: '#DC2626', textClass: 'text-red-600' },
+    { name: 'オレンジ色', hex: '#EA580C', textClass: 'text-orange-600' },
+    { name: '黄色', hex: '#CA8A04', textClass: 'text-yellow-600' },
+    { name: '緑色', hex: '#16A34A', textClass: 'text-green-600' },
+    { name: '青緑色', hex: '#0891B2', textClass: 'text-cyan-600' },
+    { name: '青色', hex: '#2563EB', textClass: 'text-blue-600' },
+    { name: '紫色', hex: '#9333EA', textClass: 'text-purple-600' },
+    { name: 'ピンク色', hex: '#DB2777', textClass: 'text-pink-600' },
+    { name: '茶色', hex: '#92400E', textClass: 'text-amber-800' },
+    { name: 'グレー', hex: '#4B5563', textClass: 'text-gray-600' },
+  ];
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [files, setFiles] = useState<File[]>([]);
@@ -42,7 +57,7 @@ export default function NewPartnerPage() {
   };
 
   // 入力変更ハンドラー
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     // エラーをクリア
@@ -198,6 +213,38 @@ export default function NewPartnerPage() {
                 className="w-full p-2 border border-gray-300 rounded"
                 placeholder="特記事項があれば記載してください"
               />
+            </div>
+
+            {/* 工程表表示色 */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                工程表表示色（任意）
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                工程表で協力会社名を表示する際の色を選択できます。未設定の場合はグレーで表示されます。
+              </p>
+              <div className="flex items-center gap-3">
+                {/* 色見本 */}
+                <div
+                  className="w-10 h-10 border-2 border-gray-300 rounded flex-shrink-0"
+                  style={{ backgroundColor: formData.displayColor || '#6B7280' }}
+                  title={formData.displayColor ? '選択中の色' : '未設定（グレー）'}
+                />
+                {/* プルダウン */}
+                <select
+                  name="displayColor"
+                  value={formData.displayColor}
+                  onChange={handleChange}
+                  className="flex-1 p-2 border border-gray-300 rounded"
+                >
+                  <option value="">未設定（グレー）</option>
+                  {presetColors.map((color) => (
+                    <option key={color.hex} value={color.hex}>
+                      {color.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>

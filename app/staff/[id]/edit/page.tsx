@@ -14,8 +14,20 @@ import {
   Award,
   Heart,
   Settings,
-  Camera
+  Camera,
+  Plus,
+  Trash2
 } from 'lucide-react';
+import {
+  Qualification,
+  getCategory1Options,
+  getCategory2Options,
+  getCategory3Options,
+  getQualificationNameOptions,
+  hasCategory3,
+  isLicenseCategory,
+  isCustomCategory
+} from '@/app/lib/qualificationData';
 
 export default function StaffEditPage() {
   const router = useRouter();
@@ -44,6 +56,9 @@ export default function StaffEditPage() {
       endDate: ''
     }
   ]);
+
+  // 資格の複数管理
+  const [qualificationList, setQualificationList] = useState<Qualification[]>([]);
 
   // 基本情報・連絡先情報
   const [formData, setFormData] = useState({
@@ -75,6 +90,7 @@ export default function StaffEditPage() {
     otherQualifications: '',
     qualificationExpiry: '', // 資格有効期限
     trainingHistory: '', // 技能講習・特別教育受講履歴
+    driverLicenseExpiry: '', // 自動車免許有効期限
 
     // 4. 案件・工程管理スキル
     specialty: '', // 得意分野／専門工種
@@ -193,12 +209,16 @@ export default function StaffEditPage() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
-    // 基本情報の必須項目
+    // 基本情報タブの必須項目（顔写真、個別権限、退職日以外）
     if (!formData.name.trim()) errors.name = '氏名は必須です';
     if (!formData.nameKana.trim()) errors.nameKana = 'フリガナは必須です';
+    if (!formData.birthDate) errors.birthDate = '生年月日は必須です';
+    if (!formData.gender) errors.gender = '性別は必須です';
+    if (!formData.employeeNumber.trim()) errors.employeeNumber = '社員番号は必須です';
     if (!formData.jobTitle) errors.jobTitle = '役職は必須です';
     if (!formData.department.trim()) errors.department = '所属部署は必須です';
-    if (!formData.specialty) errors.specialty = '専門分野は必須です';
+    if (!formData.employeeType) errors.employeeType = '社員区分は必須です';
+    if (!formData.hireDate) errors.hireDate = '入社日は必須です';
 
     return errors;
   };
@@ -273,6 +293,67 @@ export default function StaffEditPage() {
     ));
   };
 
+  // 資格の追加
+  const addQualification = () => {
+    const newQualification: Qualification = {
+      id: Date.now().toString(),
+      category1: '',
+      category2: '',
+      qualificationName: '',
+      qualificationDetail: '',
+      acquisitionDate: '',
+      expiryDate: '',
+      customName: ''
+    };
+    setQualificationList([...qualificationList, newQualification]);
+  };
+
+  // 資格の削除
+  const removeQualification = (id: string) => {
+    setQualificationList(qualificationList.filter(q => q.id !== id));
+  };
+
+  // 資格の更新
+  const updateQualification = (id: string, field: keyof Qualification, value: string) => {
+    setQualificationList(qualificationList.map(q =>
+      q.id === id ? { ...q, [field]: value } : q
+    ));
+  };
+
+  // 第1階層変更時の処理（第2階層以降をリセット）
+  const handleCategory1Change = (id: string, value: string) => {
+    setQualificationList(qualificationList.map(q =>
+      q.id === id
+        ? {
+            ...q,
+            category1: value,
+            category2: '',
+            qualificationName: '',
+            qualificationDetail: '',
+            customName: '',
+            expiryDate: isLicenseCategory(value) ? q.expiryDate : '' // 免許以外は終了日をクリア
+          }
+        : q
+    ));
+  };
+
+  // 第2階層変更時の処理（第3階層をリセット）
+  const handleCategory2Change = (id: string, value: string) => {
+    const qual = qualificationList.find(q => q.id === id);
+    if (!qual) return;
+
+    setQualificationList(qualificationList.map(q =>
+      q.id === id
+        ? {
+            ...q,
+            category2: value,
+            qualificationName: '',
+            qualificationDetail: ''
+          }
+        : q
+    ));
+  };
+
   // 勤務期間の計算
   const calculateDuration = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) return '';
@@ -301,12 +382,8 @@ export default function StaffEditPage() {
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
 
-      // 最初のエラーがあるタブに自動で切り替え
-      if (errors.name || errors.nameKana || errors.jobTitle || errors.department) {
-        setActiveTab('basic');
-      } else if (errors.specialty) {
-        setActiveTab('qualification');
-      }
+      // エラーがあるタブに自動で切り替え（基本情報タブ）
+      setActiveTab('basic');
 
       alert('必須項目を入力してください');
       return;
@@ -408,22 +485,28 @@ export default function StaffEditPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">生年月日</label>
+                          <label className="block text-sm font-medium mb-1">
+                            生年月日 <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="date"
                             name="birthDate"
                             value={formData.birthDate}
                             onChange={handleInputChange}
                             className="w-full border rounded px-3 py-2"
+                            required
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">性別</label>
+                          <label className="block text-sm font-medium mb-1">
+                            性別 <span className="text-red-500">*</span>
+                          </label>
                           <select
                             name="gender"
                             value={formData.gender}
                             onChange={handleInputChange}
                             className="w-full border rounded px-3 py-2"
+                            required
                           >
                             <option value="">選択してください</option>
                             <option value="男性">男性</option>
@@ -434,7 +517,9 @@ export default function StaffEditPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">社員番号／ID</label>
+                        <label className="block text-sm font-medium mb-1">
+                          社員番号／ID <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="text"
                           name="employeeNumber"
@@ -442,6 +527,7 @@ export default function StaffEditPage() {
                           onChange={handleInputChange}
                           className="w-full border rounded px-3 py-2"
                           placeholder="例：E-0001"
+                          required
                         />
                       </div>
 
@@ -541,12 +627,15 @@ export default function StaffEditPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">社員区分</label>
+                        <label className="block text-sm font-medium mb-1">
+                          社員区分 <span className="text-red-500">*</span>
+                        </label>
                         <select
                           name="employeeType"
                           value={formData.employeeType}
                           onChange={handleInputChange}
                           className="w-full border rounded px-3 py-2"
+                          required
                         >
                           <option value="">選択してください</option>
                           <option value="正社員">正社員</option>
@@ -559,13 +648,16 @@ export default function StaffEditPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">入社日</label>
+                          <label className="block text-sm font-medium mb-1">
+                            入社日 <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="date"
                             name="hireDate"
                             value={formData.hireDate}
                             onChange={handleInputChange}
                             className="w-full border rounded px-3 py-2"
+                            required
                           />
                         </div>
                         <div>
@@ -728,14 +820,13 @@ export default function StaffEditPage() {
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <label className="block text-sm font-medium mb-1">
-                            得意分野／専門工種 <span className="text-red-500">*</span>
+                            得意分野／専門工種
                           </label>
                           <select
                             name="specialty"
                             value={formData.specialty}
                             onChange={handleInputChange}
                             className="w-full border rounded px-3 py-2"
-                            required
                           >
                             <option value="">選択してください</option>
                             <option value="機械">機械</option>
@@ -745,9 +836,6 @@ export default function StaffEditPage() {
                             <option value="納品">納品</option>
                             <option value="その他">その他</option>
                           </select>
-                          {validationErrors.specialty && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.specialty}</p>
-                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">施工経験年数</label>
@@ -763,173 +851,232 @@ export default function StaffEditPage() {
                         </div>
                       </div>
 
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">保有資格（複数選択可）</label>
-                        <div className="space-y-2">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.firstClassElectrical}
-                              onChange={() => handleQualificationChange('firstClassElectrical')}
-                              className="mr-2"
-                            />
-                            <span>1級電気工事施工管理技士</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.secondClassElectrical}
-                              onChange={() => handleQualificationChange('secondClassElectrical')}
-                              className="mr-2"
-                            />
-                            <span>2級電気工事施工管理技士</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.firstClassPiping}
-                              onChange={() => handleQualificationChange('firstClassPiping')}
-                              className="mr-2"
-                            />
-                            <span>1級管工事施工管理技士</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.secondClassPiping}
-                              onChange={() => handleQualificationChange('secondClassPiping')}
-                              className="mr-2"
-                            />
-                            <span>2級管工事施工管理技士</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.firstTypeElectrical}
-                              onChange={() => handleQualificationChange('firstTypeElectrical')}
-                              className="mr-2"
-                            />
-                            <span>第一種電気工事士</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.secondTypeElectrical}
-                              onChange={() => handleQualificationChange('secondTypeElectrical')}
-                              className="mr-2"
-                            />
-                            <span>第二種電気工事士</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.safetyOfficer}
-                              onChange={() => handleQualificationChange('safetyOfficer')}
-                              className="mr-2"
-                            />
-                            <span>安全衛生責任者</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={qualifications.other}
-                              onChange={() => handleQualificationChange('other')}
-                              className="mr-2"
-                            />
-                            <span>その他</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">その他資格（自由記入）</label>
-                          <input
-                            type="text"
-                            name="otherQualifications"
-                            value={formData.otherQualifications}
-                            onChange={handleInputChange}
-                            className="w-full border rounded px-3 py-2"
-                            placeholder="例：消防設備士甲種第1類"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">資格有効期限・更新日</label>
-                          <input
-                            type="date"
-                            name="qualificationExpiry"
-                            value={formData.qualificationExpiry}
-                            onChange={handleInputChange}
-                            className="w-full border rounded px-3 py-2"
-                          />
-                        </div>
-                      </div>
-
+                      {/* 資格管理（階層的プルダウン方式） */}
                       <div>
-                        <label className="block text-sm font-medium mb-1">技能講習・特別教育受講履歴</label>
-                        <textarea
-                          name="trainingHistory"
-                          value={formData.trainingHistory}
-                          onChange={handleInputChange}
-                          className="w-full border rounded px-3 py-2"
-                          rows={3}
-                          placeholder="例：足場の組立て等特別教育、高所作業車運転技能講習、玉掛け技能講習など"
-                        />
+                        <div className="flex items-center justify-between mb-4">
+                          <label className="block text-sm font-medium">保有資格</label>
+                          <button
+                            type="button"
+                            onClick={addQualification}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          >
+                            <Plus size={16} />
+                            資格を追加
+                          </button>
+                        </div>
+
+                        {qualificationList.length === 0 && (
+                          <div className="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300">
+                            <Award size={48} className="mx-auto text-gray-400 mb-2" />
+                            <p className="text-gray-500">「資格を追加」ボタンをクリックして資格を登録してください</p>
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          {qualificationList.map((qual, index) => (
+                            <div key={qual.id} className="border rounded-lg p-4 bg-gray-50">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="font-medium text-gray-700">資格 {index + 1}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeQualification(qual.id)}
+                                  className="text-red-600 hover:text-red-800 transition-colors flex items-center gap-1"
+                                >
+                                  <Trash2 size={16} />
+                                  削除
+                                </button>
+                              </div>
+
+                              <div className="space-y-3">
+                                {/* 第1階層：大カテゴリ */}
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">カテゴリ <span className="text-red-500">*</span></label>
+                                  <select
+                                    value={qual.category1}
+                                    onChange={(e) => handleCategory1Change(qual.id, e.target.value)}
+                                    className="w-full border rounded px-3 py-2"
+                                  >
+                                    <option value="">選択してください</option>
+                                    {getCategory1Options().map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {/* 第2階層：中カテゴリ（第1階層選択後に表示） */}
+                                {qual.category1 && !isCustomCategory(qual.category1) && (
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">種別 <span className="text-red-500">*</span></label>
+                                    <select
+                                      value={qual.category2}
+                                      onChange={(e) => handleCategory2Change(qual.id, e.target.value)}
+                                      className="w-full border rounded px-3 py-2"
+                                    >
+                                      <option value="">選択してください</option>
+                                      {getCategory2Options(qual.category1).map((option) => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+
+                                {/* 第3階層：資格名・詳細（必要な場合のみ表示） */}
+                                {qual.category1 && qual.category2 && hasCategory3(qual.category1, qual.category2) ? (
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">詳細 <span className="text-red-500">*</span></label>
+                                    <select
+                                      value={qual.qualificationDetail}
+                                      onChange={(e) => updateQualification(qual.id, 'qualificationDetail', e.target.value)}
+                                      className="w-full border rounded px-3 py-2"
+                                    >
+                                      <option value="">選択してください</option>
+                                      {getCategory3Options(qual.category1, qual.category2).map((option) => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ) : (
+                                  qual.category1 && qual.category2 && (
+                                    <div>
+                                      <label className="block text-sm font-medium mb-1">資格名 <span className="text-red-500">*</span></label>
+                                      <select
+                                        value={qual.qualificationName}
+                                        onChange={(e) => updateQualification(qual.id, 'qualificationName', e.target.value)}
+                                        className="w-full border rounded px-3 py-2"
+                                      >
+                                        <option value="">選択してください</option>
+                                        {getQualificationNameOptions(qual.category1, qual.category2).map((option) => (
+                                          <option key={option} value={option}>
+                                            {option}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )
+                                )}
+
+                                {/* 自由入力資格名（その他（自由入力）選択時のみ） */}
+                                {isCustomCategory(qual.category1) && (
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">資格名 <span className="text-red-500">*</span></label>
+                                    <input
+                                      type="text"
+                                      value={qual.customName || ''}
+                                      onChange={(e) => updateQualification(qual.id, 'customName', e.target.value)}
+                                      className="w-full border rounded px-3 py-2"
+                                      placeholder="資格名を入力してください"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* 取得日（全カテゴリ必須） */}
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">取得日 <span className="text-red-500">*</span></label>
+                                  <input
+                                    type="date"
+                                    value={qual.acquisitionDate}
+                                    onChange={(e) => updateQualification(qual.id, 'acquisitionDate', e.target.value)}
+                                    className="w-full border rounded px-3 py-2"
+                                  />
+                                </div>
+
+                                {/* 終了日（免許カテゴリのみ表示・必須） */}
+                                {isLicenseCategory(qual.category1) && (
+                                  <div>
+                                    <label className="block text-sm font-medium mb-1">有効期限 <span className="text-red-500">*</span></label>
+                                    <input
+                                      type="date"
+                                      value={qual.expiryDate || ''}
+                                      onChange={(e) => updateQualification(qual.id, 'expiryDate', e.target.value)}
+                                      className="w-full border rounded px-3 py-2"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">※ 有効期限の1ヶ月前にアラートが表示されます</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    {/* 免許書の写真 */}
+                    {/* 自動車運転免許証 */}
                     <div>
-                      <h3 className="font-bold text-lg border-b pb-2 mb-4">免許書の写真（最大2枚）</h3>
-                      <p className="text-xs text-gray-500 mb-3">※ 運転免許証、資格証明書等（表面・裏面）</p>
-                      <div className="grid grid-cols-2 gap-4">
-                        {[0, 1].map((index) => (
-                          <div key={index} className="space-y-2">
-                            <div className="text-sm font-medium text-gray-700">
-                              {index === 0 ? '1枚目' : '2枚目'}
-                            </div>
-                            <div className="relative">
-                              <div className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                                {licensePreviews[index] ? (
-                                  <>
-                                    <Image
-                                      src={licensePreviews[index]}
-                                      alt={`免許書${index + 1}`}
-                                      width={256}
-                                      height={160}
-                                      className="w-full h-full object-contain rounded-lg"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => removeLicenseImage(index)}
-                                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
-                                      title="削除"
-                                    >
-                                      ×
-                                    </button>
-                                  </>
-                                ) : (
-                                  <Camera size={40} className="text-gray-400" />
-                                )}
+                      <h3 className="font-bold text-lg border-b pb-2 mb-4">自動車運転免許証</h3>
+
+                      {/* 免許証の写真 */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">免許証の写真（表面・裏面）</label>
+                        <div className="grid grid-cols-2 gap-4">
+                          {[0, 1].map((index) => (
+                            <div key={index} className="space-y-2">
+                              <div className="text-sm font-medium text-gray-700">
+                                {index === 0 ? '表面' : '裏面'}
                               </div>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleLicenseImageChange(index)}
-                                className="hidden"
-                                id={`licenseImage${index}`}
-                              />
-                              <label
-                                htmlFor={`licenseImage${index}`}
-                                className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded transition-colors inline-block mt-2 w-full text-center"
-                              >
-                                {licensePreviews[index] ? '画像を変更' : '画像を選択'}
-                              </label>
+                              <div className="relative">
+                                <div className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                                  {licensePreviews[index] ? (
+                                    <>
+                                      <Image
+                                        src={licensePreviews[index]}
+                                        alt={`免許証${index === 0 ? '表面' : '裏面'}`}
+                                        width={256}
+                                        height={160}
+                                        className="w-full h-full object-contain rounded-lg"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => removeLicenseImage(index)}
+                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                                        title="削除"
+                                      >
+                                        ×
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <Camera size={40} className="text-gray-400" />
+                                  )}
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleLicenseImageChange(index)}
+                                  className="hidden"
+                                  id={`licenseImage${index}`}
+                                />
+                                <label
+                                  htmlFor={`licenseImage${index}`}
+                                  className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded transition-colors inline-block mt-2 w-full text-center"
+                                >
+                                  {licensePreviews[index] ? '画像を変更' : '画像を選択'}
+                                </label>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">JPG, PNG (各最大5MB)</p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">JPG, PNG (各最大5MB)</p>
+
+                      {/* 有効期限 */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">有効期限</label>
+                          <input
+                            type="date"
+                            name="driverLicenseExpiry"
+                            value={formData.driverLicenseExpiry}
+                            onChange={handleInputChange}
+                            className="w-full border rounded px-3 py-2"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">※ 免許証に記載の有効期限を入力してください</p>
+                        </div>
+                      </div>
                     </div>
 
                     {/* 備考 */}
@@ -1065,7 +1212,7 @@ export default function StaffEditPage() {
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-medium mb-1">業務内容</label>
+                                  <label className="block text-xs font-medium mb-1">業務実績</label>
                                   <select
                                     value={career.description}
                                     onChange={(e) => updateCareer(career.id, 'description', e.target.value)}

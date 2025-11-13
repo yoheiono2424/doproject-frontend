@@ -85,6 +85,7 @@ export default function ProjectsPage() {
                   <option value="鋼造">鋼造</option>
                   <option value="通信">通信</option>
                   <option value="納品">納品</option>
+                  <option value="管工事">管工事</option>
                   <option value="その他">その他</option>
                 </select>
                 <select 

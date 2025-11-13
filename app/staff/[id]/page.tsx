@@ -318,42 +318,123 @@ export default function StaffDetailPage() {
                       </div>
                     </div>
 
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-600 mb-1">保有資格</label>
-                      <div className="text-base">{employee.qualification || '-'}</div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">その他資格（自由記入）</label>
-                        <div className="text-base">-</div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">資格有効期限・更新日</label>
-                        <div className="text-base">-</div>
-                      </div>
-                    </div>
-
+                    {/* 資格管理（階層的表示） */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">技能講習・特別教育受講履歴</label>
-                      <div className="text-base">-</div>
+                      <h3 className="font-bold text-lg border-b pb-2 mb-4">保有資格</h3>
+
+                      {/* 資格データが存在しない場合 */}
+                      {(!employee.qualifications || employee.qualifications.length === 0) && (
+                        <div className="text-center py-8 bg-gray-50 rounded border border-dashed border-gray-300">
+                          <Award size={48} className="mx-auto text-gray-400 mb-2" />
+                          <p className="text-gray-500">登録されている資格はありません</p>
+                        </div>
+                      )}
+
+                      {/* 資格データが存在する場合 */}
+                      {employee.qualifications && employee.qualifications.length > 0 && (
+                        <div className="space-y-4">
+                          {employee.qualifications.map((qual: any, index: number) => {
+                            // 資格名の表示ロジック
+                            let displayName = '';
+                            if (qual.customName) {
+                              displayName = qual.customName;
+                            } else if (qual.qualificationDetail) {
+                              displayName = `${qual.category2} - ${qual.qualificationDetail}`;
+                            } else if (qual.qualificationName) {
+                              displayName = qual.qualificationName;
+                            } else {
+                              displayName = qual.category2 || '-';
+                            }
+
+                            // 期限切れ間近かどうかをチェック（免許カテゴリのみ）
+                            const isLicense = qual.category1 === '免許';
+                            let isExpiringSoon = false;
+                            let daysRemaining = 0;
+
+                            if (isLicense && qual.expiryDate) {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              const expiryDate = new Date(qual.expiryDate);
+                              expiryDate.setHours(0, 0, 0, 0);
+                              const oneMonthFromToday = new Date(today);
+                              oneMonthFromToday.setDate(oneMonthFromToday.getDate() + 30);
+
+                              if (expiryDate <= oneMonthFromToday && expiryDate >= today) {
+                                isExpiringSoon = true;
+                                daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                              }
+                            }
+
+                            return (
+                              <div
+                                key={index}
+                                className={`border rounded-lg p-4 ${isExpiringSoon ? 'bg-yellow-50 border-yellow-300' : 'bg-gray-50'}`}
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                        {qual.category1}
+                                      </span>
+                                      {isExpiringSoon && (
+                                        <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-500 text-white flex items-center gap-1">
+                                          ⚠️ 期限間近（残り{daysRemaining}日）
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="font-bold text-lg text-gray-800">{displayName}</h4>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-600">取得日：</span>
+                                    <span className="font-medium">{qual.acquisitionDate || '-'}</span>
+                                  </div>
+                                  {isLicense && qual.expiryDate && (
+                                    <div>
+                                      <span className="text-gray-600">有効期限：</span>
+                                      <span className={`font-medium ${isExpiringSoon ? 'text-yellow-700' : ''}`}>
+                                        {qual.expiryDate}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* 免許書の写真 */}
+                  {/* 自動車運転免許証 */}
                   <div>
-                    <h3 className="font-bold text-lg border-b pb-2 mb-4">免許書の写真（最大2枚）</h3>
+                    <h3 className="font-bold text-lg border-b pb-2 mb-4">自動車運転免許証</h3>
+
+                    {/* 免許証の写真 */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-600 mb-2">免許証の写真（表面・裏面）</label>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[0, 1].map((index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="text-sm font-medium text-gray-700">
+                              {index === 0 ? '表面' : '裏面'}
+                            </div>
+                            <div className="w-full h-40 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                              <Camera size={40} className="text-gray-400" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 有効期限 */}
                     <div className="grid grid-cols-2 gap-4">
-                      {[0, 1].map((index) => (
-                        <div key={index} className="space-y-2">
-                          <div className="text-sm font-medium text-gray-700">
-                            {index === 0 ? '1枚目' : '2枚目'}
-                          </div>
-                          <div className="w-full h-40 border-2 border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                            <Camera size={40} className="text-gray-400" />
-                          </div>
-                        </div>
-                      ))}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">有効期限</label>
+                        <div className="text-base">-</div>
+                      </div>
                     </div>
                   </div>
 
